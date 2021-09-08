@@ -758,7 +758,35 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  
+  /menuUpdate:
+    post:
+      summary: New Merchant Update Notification
+      description: 
+          Information about a update in the systems.  
+          This webhook notification has no request body.  
+
+          > It is expected that once the notification is received, the **Ordering System** will make a new request to the **[/merchant](#operation/getMerchant)** endpoint to update the merchant information.
+
+      operationId: menuUpdated
+      tags: 
+        - merchantEndpoints
+      security:
+        - OAuth2: [od.all]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantUpdate"
+      responses:
+        "200":
+          description: Return a 200 status to indicate that the data was received successfully
+        "403":
+          $ref: "#/components/responses/AccessDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"     
+
 
   /merchantStatus:
     get:
