@@ -758,7 +758,7 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  /menuUpdate:
+  /merchantUpdate:
     post:
       summary: New Merchant Update Notification
       description: 
@@ -767,7 +767,7 @@ paths:
 
           > It is expected that once the notification is received, the **Ordering System** will make a new request to the **[/merchant](#operation/getMerchant)** endpoint to update the merchant information.
 
-      operationId: menuUpdated
+      operationId: menuUpdate
       tags: 
         - merchantEndpoints
       security:
