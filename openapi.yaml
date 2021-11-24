@@ -13,13 +13,13 @@ info:
     altText: Open Delivery logo
 
   description: |-
-    # -------- OPEN DELIVERY --------
+    # ► ------- OPEN DELIVERY ------- ◄
 
-    # Introduction
+    # └► Introduction
       **Open Delivery** proposes to solve the challenge of organizing the flow of information between merchants and ordering applications, establishing a single communication standard for all, through a set of REST APIs.
       Thus, menus and orders are standardized and customer requests are received in a single place, in an organized and efficient way, allowing the merchant to work with more partners in the delivery environment.
 
-    # API Versions
+    # └► API Versions
 
     At the moment Open Delivery works with two versions:
 
@@ -38,15 +38,16 @@ info:
 
     As both versions are still in release candidate, small changes may still occur until the release date.
 
-    # Issues and Suggestions
+    # └► Issues and Suggestions
 
     In case of doubts, suggestions, improvements, problems or any information regarding the documentation presented here, access the project's Github repo and open a new issue.
        
        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/issues
 
-    # --- GENERAL INFORMATION ---
+    # 
+    # ► ------- GENERAL INFO -------- ◄
 
-    # Open Delivery API Evolution
+    # └► Open Delivery API Evolution
 
      The **Open Delivery** API seeks to respect [SemVer](https://semver.org/). In this sense, compatible changes should not generate a new major version.
 
@@ -66,7 +67,7 @@ info:
      - Change of fields sorting;
      - Addition of new elements in enumerations.
 
-    # General guidelines
+    # └► General guidelines
 
      - **DateTime, Date and Time values**: For properties that require a DateTime, Date or Time value, use the formats specified in date-time, date and time formats (following the [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14) specifications)
       For example:
@@ -79,7 +80,7 @@ info:
 
     - **Null** values: Do not use the value null in place of objects. If an object is optional, you must omit it from your feed.
 
-    # Error Handling
+    # └► Error Handling
 
      The API returns HTTP status codes to indicate success or failure of requests.
 
@@ -129,11 +130,11 @@ info:
 tags:
   # Authentication
   - name: securitySection
-    x-displayName: ------ SECURITY ------
+    x-displayName: "► ------------ SECURITY -------------- ◄"
     x-traitTag: true
 
   - name: authentication
-    x-displayName: "Authentication"
+    x-displayName: "└■ Authentication"
     description: |
 
       **Open Delivery** suports two types of authentication methods: **OAuth 2** and **apiKey**.
@@ -143,12 +144,12 @@ tags:
 # Version Tags
 
   - name: versionSection
-    x-displayName: "====== VERSION 1.0.0-rc.7 ======"
+    x-displayName: " ►►►► VERSION 1.0.0-rc.7 ◄◄◄◄"
     x-traitTag: true
     description: |-
 
   - name: versionChangelog
-    x-displayName: "Changelog"
+    x-displayName: "└─► Changelog"
     x-traitTag: true
     description: |-  
     
@@ -169,12 +170,12 @@ tags:
         https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
 
   - name: versionSection2
-    x-displayName: "====== VERSION 1.1.0-rc.0 ======"
+    x-displayName: " ►►►► VERSION 1.1.0-rc.0 ◄◄◄◄"
     x-traitTag: true
     description: |-
 
   - name: versionChangelog2
-    x-displayName: "Changelog"
+    x-displayName: "└─► Changelog"
     x-traitTag: true
     description: |-  
     
@@ -190,11 +191,11 @@ tags:
 # Merchant Tags
 
   - name: merchantSection
-    x-displayName: ------ MERCHANT ------
+    x-displayName:   "└─■ MERCHANT"
     x-traitTag: true
 
   - name: merchantOverview
-    x-displayName: Merchant Overview
+    x-displayName: "└───● Merchant Overview"
     description: |-
 
       The Merchant entity will be the entity used by the **Ordering Application** to fetch all the data from a merchant and display it to the user.
@@ -216,7 +217,7 @@ tags:
       3.	If the **Software Service** **[refuses](#operation/cancelDenied)** an order for any reason, upon receiving the refusal, it is recommended that the **Ordering Application** make a new request on the **[/merchant](#operation/getMerchant)** endpoint.
 
   - name: merchantStructure
-    x-displayName: Merchant Structure
+    x-displayName: └───● Merchant Structure
     description: |-
 
       The structure of the Merchant model consists of the following top-level properties:
@@ -326,18 +327,18 @@ tags:
       <SchemaDefinition schemaRef="#/components/schemas/Availability" />
 
   - name: merchantEndpoints
-    x-displayName: "Merchant Endpoint"
+    x-displayName: "└───● Merchant Endpoint"
     description: |-
 
   - name: merchantStatus
-    x-displayName: Merchant Status
+    x-displayName: "└───● Merchant Status"
     description: |-
       ## Health Check
 
       The **Ordering Application** must provide an **[endpoint](#operation/getMerchantStatus)** to let the merchant **Software Service** knows if its merchant information is being correctly read by the **Ordering Application**.
 
   - name: merchantUpdate
-    x-displayName: Merchant Update
+    x-displayName: "└───● Merchant Update"
     description: |-
       ### Merchant Update Notification
 
@@ -349,11 +350,11 @@ tags:
 # Orders Tags
 
   - name: ordersSection
-    x-displayName: ------ ORDERS ------
+    x-displayName:  "└─■ ORDERS"
     x-traitTag: true
 
   - name: ordersOverview
-    x-displayName: Order Overview
+    x-displayName: └───● Order Overview
     description: |-
 
       This overview summarizes the **Open Delivery** Ordering flow and how it interacts with merchant **Software Services** and **Ordering Applications**.
@@ -390,7 +391,7 @@ tags:
 
       Once the new order event is received, it is necessary to get the **[order details](#tag/ordersDetails)**, such as items purchased, delivery addresses, and payment methods.
 
-      ### Status Updates
+      ### Events Updates
 
       After getting the order details, the merchant needs to notify the '**Ordering Application**' of the order progress.
 
@@ -412,7 +413,7 @@ tags:
     x-traitTag: true
 
   - name: ordersPolling
-    x-displayName: Polling (Required)
+    x-displayName: └───● Polling (Required)
     description: |-
 
       Receiving events via Polling works as follows:
@@ -454,7 +455,7 @@ tags:
       > **Software Services** only needs to send acknowledgment of the event once."
 
   - name: ordersWebhook
-    x-displayName: Webhook (Optional)
+    x-displayName: └───● Webhook (Optional)
     description: |-
 
       Receiving events via Webhook works as follows:
@@ -488,7 +489,7 @@ tags:
       The value of this field is a lowercased hexadecimal HMAC signature of the webhook HTTP request body, using the client secret as a key and SHA256 as the hash function.
 
   - name: ordersDetails
-    x-displayName: Order Details
+    x-displayName: └───● Order Details
     description: |-
 
       Before confirming or canceling an order, it is necessary to get the order details so that the merchant **Software Service** user can check if he will be able to prepare and deliver this order, such as checking if he has all the necessary items and if he is available to make the delivery to the informed address.
@@ -502,7 +503,7 @@ tags:
       <SchemaDefinition schemaRef="#/components/schemas/Order" />
 
   - name: ordersStatus
-    x-displayName: Status Update
+    x-displayName: └───● Order Event Update
     description: |-
 
       Following the order lifecycle, the merchant **Software Service** needs to notify the **Ordering Application** of the upcoming order status.
@@ -519,7 +520,7 @@ tags:
       > When sending requests to these endpoints, is expected that the **Ordering Application** notifies the consumer of the progress of the order.
 
   - name: ordersCancellation
-    x-displayName: Cancellation
+    x-displayName: └───● Order Cancellation
     description: |-
 
       An order can be canceled for several reasons and the initiative to cancel an order can come from the merchant, the customer, or the ordering application.   
@@ -614,11 +615,11 @@ tags:
 # Sales Report Tags
 
   - name: salesReportSection
-    x-displayName: ------ SALES REPORT ------
+    x-displayName: └─■ SALES REPORT
     x-traitTag: true
 
   - name: salesReport
-    x-displayName: Sales Report Endpoint
+    x-displayName: └───● Sales Report Endpoint
     description: |-
 
       **Ordering Application** must provide an endpoint where merchants can view information about sales for orders placed and information about the transfer of funds to the merchant.
@@ -627,7 +628,7 @@ tags:
 # Logistics Tags
 
   - name: logisticsSection
-    x-displayName: ------ LOGISTICS ------
+    x-displayName: └─■ LOGISTICS
     x-traitTag: true
     description: |-
       This section covers the API referring to the operations with `Logistic Services`. 
@@ -637,7 +638,7 @@ tags:
       The expected release of the logistics API is at **Version 1.1.0**
 
   - name: logisticOverview
-    x-displayName: Logistic Overview
+    x-displayName: └───● Logistic Overview
     description: |-
       Open Delivery provides a set of standards so that both merchants through their Software Service and Ordering Applications can request a new delivery to a logistics operator and track this delivery.
 
@@ -668,7 +669,7 @@ tags:
       Endpoint with the function of simulating a new delivery, with the purpose of checking if it is possible to make the delivery as well as its prices and times. "
 
   - name: logisticOrder
-    x-displayName: Delivery Order
+    x-displayName: └───● Delivery Order
     description: |-
 
       ### Events
@@ -704,7 +705,7 @@ tags:
       > Since all event flow is per Order, then in the case of deliveries that have combined orders, an event message must be sent to each of the orders separately. 
 
   - name: logisticTracking
-    x-displayName: Delivery Tracking
+    x-displayName: └───● Delivery Tracking
     description: |-
      Receiving delivery events via Webhook works as follows:
 
@@ -737,7 +738,7 @@ tags:
       The value of this field is a lowercased hexadecimal HMAC signature of the webhook HTTP request body, using the client secret as a key and SHA256 as the hash function.
 
   - name: logisticPrice
-    x-displayName: Delivery Availability and Pricing
+    x-displayName: └───● Delivery Availability and Pricing
     description: |-
 
       Endpoint used to check the availability of a `Logistic Service` to make a delivery with addresses and times already defined, as well as to obtain the price for this delivery.
@@ -748,7 +749,7 @@ tags:
         To make a real delivery request, call this endpoint. 
 
   - name: logisticDetails
-    x-displayName: Delivery Details and History
+    x-displayName: └───● Delivery Details and History
     description: |-
 
       Endpoint used to get detailed and history information for a specific delivery order. 
@@ -768,38 +769,38 @@ x-tagGroups:
   - name: ""
     tags:
       - merchantSection
-  - name: "Overview and Structure"
+  - name: "└──◌ Overview and Structure"
     tags:
       - merchantOverview
       - merchantStructure
-  - name: "api"
+  - name: "└──◌ api"
     tags:
       - merchantEndpoints
-  - name: Updates and Status
+  - name: "└──◌ Updates and Status"
     tags:
       - merchantUpdate
       - merchantStatus
   - name: ""
     tags:
       - ordersSection
-  - name: "Overview"
+  - name: "└──◌ Overview"
     tags:
       - ordersOverview
-  - name: Events
+  - name: └──◌ Events
     tags:
       - ordersPolling
       - ordersWebhook
-  - name: Details
+  - name: └──◌ Details
     tags:
       - ordersDetails
-  - name: Actions
+  - name: └──◌ Actions
     tags:
       - ordersStatus
       - ordersCancellation
   - name: ""
     tags:
       - salesReportSection
-  - name: Sales Report API
+  - name: └──◌ Sales Report API
     tags:
       - salesReport
   # - name: ""
@@ -815,7 +816,7 @@ x-tagGroups:
   - name: ""
     tags:
       - logisticsSection
-  - name: Logistics
+  - name: └──◌ Logistics API
     tags:
       - logisticOverview
       - logisticOrder
