@@ -126,31 +126,6 @@ info:
        * __Meaning__: Indicates that the service took longer than expected to return.
        * __HTTP Status Code__: [504 Gateway Timeout](https://tools.ietf.org/html/rfc7231#section-6.6.5).
 
-    # ----------------------------------------
-    # VERSION 1.0.0-rc7
-    # ----------------------------------------
-
-    # Changelog
-     
-     ### CHANGELOG
-
-       **Latest Changes:**  
-       Version: **1.00 rc6**
-
-       - Removed all `@` in front of the `@id` attributes. All attributes are now defaulted to `id`.  
-       - Removed all `@type` fields from `/merchant` entities.
-       - Removed the `@` from the `@type` attribute of the `orders` object which was renamed to `type` (without the @).
-       - Corrected the name of the **`X-App-MerchanId`** attribute of the **header** parameter in the order notification webhook to **`X-App-MerchantId`**.
-       - Changed the responses for the following endpoints from `HTTP 200` to `HTTP 202`:
-         - `/orders/{orderId}/confirm`
-         - `/orders/{orderId}/requestCancellation`
-         - `/orders/{orderId}/readyForPickup`.
-         - `/orders/{orderId}/dispatch`
-
-       See the full changelog here:  
-       https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
-
-
 tags:
   # Authentication
   - name: securitySection
@@ -164,6 +139,53 @@ tags:
       **Open Delivery** suports two types of authentication methods: **OAuth 2** and **apiKey**.
 
       <!-- ReDoc-Inject: <security-definitions> -->
+
+# Version Tags
+
+  - name: versionSection
+    x-displayName: "====== VERSION 1.0.0-rc.7 ======"
+    x-traitTag: true
+    description: |-
+
+  - name: versionChangelog
+    x-displayName: "Changelog"
+    x-traitTag: true
+    description: |-  
+    
+        **Latest Changes:**  
+        Version: **1.00 rc6**
+
+        - Removed all `@` in front of the `@id` attributes. All attributes are now defaulted to `id`.  
+        - Removed all `@type` fields from `/merchant` entities.
+        - Removed the `@` from the `@type` attribute of the `orders` object which was renamed to `type` (without the @).
+        - Corrected the name of the **`X-App-MerchanId`** attribute of the **header** parameter in the order notification webhook to **`X-App-MerchantId`**.
+        - Changed the responses for the following endpoints from `HTTP 200` to `HTTP 202`:
+          - `/orders/{orderId}/confirm`
+          - `/orders/{orderId}/requestCancellation`
+          - `/orders/{orderId}/readyForPickup`.
+          - `/orders/{orderId}/dispatch`
+
+        See the full changelog here:  
+        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
+
+  - name: versionSection2
+    x-displayName: "====== VERSION 1.1.0-rc.0 ======"
+    x-traitTag: true
+    description: |-
+
+  - name: versionChangelog2
+    x-displayName: "Changelog"
+    x-traitTag: true
+    description: |-  
+    
+        **Latest Changes:**  
+        Version: **1.1.0 rc.0**
+
+        - Added Logistics API
+
+        See the full changelog here:  
+        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
+
 
 # Merchant Tags
 
@@ -601,22 +623,6 @@ tags:
 
       **Ordering Application** must provide an endpoint where merchants can view information about sales for orders placed and information about the transfer of funds to the merchant.
 
-# Logistics Tags
-
-  - name: versionSection1
-    x-displayName: ----------------------------------------
-    x-traitTag: true
-    description: |-
-
-  - name: versionSection2
-    x-displayName: VERSION 1.1.0-rc.0
-    x-traitTag: true
-    description: |-
-
-  - name: versionSection3
-    x-displayName: ----------------------------------------
-    x-traitTag: true
-    description: |-
 
 # Logistics Tags
 
@@ -755,6 +761,10 @@ x-tagGroups:
     tags:
       - securitySection
       - authentication
+  - name: ".................................................................................................................."
+    tags:
+      - versionSection
+      - versionChangelog   
   - name: ""
     tags:
       - merchantSection
@@ -798,11 +808,10 @@ x-tagGroups:
   # - name: Repository API
   #   tags:
   #     - repositoryOverview
-  - name: ""
+  - name: ".................................................................................................................."
     tags:
-      - versionSection1
       - versionSection2
-      - versionSection3            
+      - versionChangelog2     
   - name: ""
     tags:
       - logisticsSection
