@@ -19,24 +19,34 @@ info:
       **Open Delivery** proposes to solve the challenge of organizing the flow of information between merchants and ordering applications, establishing a single communication standard for all, through a set of REST APIs.
       Thus, menus and orders are standardized and customer requests are received in a single place, in an organized and efficient way, allowing the merchant to work with more partners in the delivery environment.
 
-    # └► API Versions
+    # └► Table Of Contents
 
-    At the moment Open Delivery works with two versions:
+    The documentation is separated as follows:
 
-    - **1.0.0-rc.X**: Release candidate of version 1.0.0:  
-    This version contemplates the following APIs:
+    **[General and Common Information](#section/-GENERAL-INFO-)**    
+    This is information that is valid for all versions that exist so far.
+      - **[Open Delivery API Evolution](#section/Open-Delivery-API-Evolution)**
+      - **[General Guidelines](#section/General-Guidelines)**
+      - **[Error Handling](#section/Error-Handling)**
+
+
+    **[Version 1.0.0-rc.X](#tag/versionSection)**   
+    Endpoints that will be released with version 1.0.0
+      - **[Changelog](#tag/versionChangelog)**
       - **[Security](#tag/securitySection)**
       - **[Merchant](#tag/merchantSection)**
       - **[Order](#tag/orderSection)**
       - **[Sales Report](#tag/salesReportSection)**
 
-    - **1.1.0-rc.X**: Release candidate of version 1.1.0:  
-    This release contemplates the following APIs:
+    **[Version 1.1.0-rc.X](#tag/versionSection2)**  
+    Endpoints that will be released with version 1.1.0
+      - **[Changelog](#tag/versionChangelog2)**
       - **[Logistics](#tag/logisticsSection)**
 
-    Both versions will be available in this documentation, each one with its own changelog.
 
-    As both versions are still in release candidate, small changes may still occur until the release date.
+    > Both versions will be available in this documentation, each one with its own changelog.
+
+    > As both versions are still in release candidate, small changes may still occur until the release date.
 
     # └► Issues and Suggestions
 
@@ -130,11 +140,11 @@ info:
 tags:
   # Authentication
   - name: securitySection
-    x-displayName: "► ------------ SECURITY -------------- ◄"
+    x-displayName: "└─■ SECURITY"
     x-traitTag: true
 
   - name: authentication
-    x-displayName: "└■ Authentication"
+    x-displayName: "└───● Authentication"
     description: |
 
       **Open Delivery** suports two types of authentication methods: **OAuth 2** and **apiKey**.
@@ -758,14 +768,14 @@ tags:
         Misuse of this endpoint can result in blockages by Logistic Service.
 
 x-tagGroups:
-  - name: ""
-    tags:
-      - securitySection
-      - authentication
   - name: ".................................................................................................................."
     tags:
       - versionSection
-      - versionChangelog   
+      - versionChangelog
+  - name: ""
+    tags:
+      - securitySection
+      - authentication         
   - name: ""
     tags:
       - merchantSection
