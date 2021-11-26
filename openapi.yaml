@@ -5161,7 +5161,7 @@ components:
             complement: "2001"
             latitude: -23.5480
             longitude: -46.63630
-          contactEmails: "food@company.com"
+          contactEmails: ["food@company.com"]
           contactPhones:
             { commercialNumber: "11999999999", whatsappNumber: "11998888888" }
           logoImage:
@@ -5370,7 +5370,11 @@ components:
               index: 0,
               name: "Salted Pizza",
               description: "Salted pizza flavors.",
-              imageUrl: "https://www.food-company.com/images/salted_pizza.png",
+              image:
+                {
+                  URL: "https://food-company.com/category1.png",
+                  CRC-32: 09345UIHF98
+                },
               externalCode: "13",
               status: "AVAILABLE",
               availabilityId:
@@ -5383,7 +5387,11 @@ components:
               index: 1,
               name: "Sweeted Pizza",
               description: "Sweeted pizza flavors.",
-              imageUrl: "https://www.food-company.com/images/sweeted_pizza.png",
+              image:
+                {
+                  URL: "https://food-company.com/category2.png",
+                  CRC-32: 09345UIHF98
+                },
               externalCode: "13",
               status: "AVAILABLE",
               availabilityId:
@@ -5437,7 +5445,7 @@ components:
                     maxPermitted: 1,
                   },
                   {
-                    id: e5232f14-430c-4a94-8ff6-289d5a16a87a,
+                    id: e5232f14-430c-4a94-8ff6-289d5a16a87b,
                     itemId: 7e507cab-7235-4f75-a0c2-e955fb2f2048,
                     index: 1,
                     price:
@@ -5474,15 +5482,35 @@ components:
               id: 11d063c4-73a7-4f87-a0eb-71636cc02029",
               startDate: "05/01/2021",
               endDate: "05/30/2021",
-              hours:
-                {
-                  dayOfWeek:
-                    ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
-                },
-              timePeriods:
-                { startTime: "10:00:00.000Z", endTime: "18:00:00.000Z" },
-            },
-          ]
+              hours: [
+                      {
+                        dayOfWeek:
+                          [
+                            "MONDAY",
+                            "TUESDAY",
+                            "WEDNESDAY",
+                            "THURSDAY",
+                            "FRIDAY",
+                          ],                     
+                      timePeriods:
+                        {
+                          startTime: "10:00:00.000Z",
+                          endTime: "18:00:00.000Z",
+                        }
+                      },
+                      {
+                        dayOfWeek:
+                          [
+                            "SATURDAY",
+                            "SUNDAY",
+                          ],                     
+                      timePeriods:
+                        {
+                          startTime: "14:00:00.000Z",
+                          endTime: "18:00:00.000Z",
+                        }
+                      }
+                    ]}]
 
     # orderDeliveryExample:
     #   summary: New Delivery example
