@@ -2601,7 +2601,6 @@ components:
           description: "Image of the item"
           allOf:
             - $ref: "#/components/schemas/Image"
-          example: "https://www.food-place.com/images/peperroni.png"
         nutritionalInfo:
           type: "object"
           description: "Nutrition information for the dish."
@@ -2809,7 +2808,6 @@ components:
           description: "Image of the category (the category image display depends on the client application interface)"
           allOf:
             - $ref: "#/components/schemas/Image"
-          example: "https://food-company.com/category1.png"
         externalCode:
           type: "string"
           description: "Category External Code. (Tipically the merchant **Software Service** category code)"
