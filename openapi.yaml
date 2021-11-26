@@ -167,17 +167,16 @@ tags:
     description: |-  
     
         **Latest Changes:**  
-        Version: **1.00 rc6**
+        Version [1.0.0-rc.7] - Nov 25, 2021
+        
+        #### Breaking changes:
+        - Changed the `out_of_stock_items` and `invalid_items` attributes of the `/orders/{orderId}/requestCancellation` endpoint to `outOfStockItems` and `invalidItems`.
 
-        - Removed all `@` in front of the `@id` attributes. All attributes are now defaulted to `id`.  
-        - Removed all `@type` fields from `/merchant` entities.
-        - Removed the `@` from the `@type` attribute of the `orders` object which was renamed to `type` (without the @).
-        - Corrected the name of the **`X-App-MerchanId`** attribute of the **header** parameter in the order notification webhook to **`X-App-MerchantId`**.
-        - Changed the responses for the following endpoints from `HTTP 200` to `HTTP 202`:
-          - `/orders/{orderId}/confirm`
-          - `/orders/{orderId}/requestCancellation`
-          - `/orders/{orderId}/readyForPickup`.
-          - `/orders/{orderId}/dispatch`
+        #### Other changes
+        * Restructured side menu to better separate sections;
+        * Removed the `format` attribute `description` from the `nutritionalInfo` of the Merchant `item` object that was incorrectly marked as "UUID";
+        * Corrected spelling of `BURGUER` option to `BURGER` in `merchantCategories` attribute of Merchant `BasicInfo` object;
+        * Fixed `BasicInfo` example where `logoImage` and `bannerImage` fields were incorrect.
 
         See the full changelog here:  
         https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
@@ -2016,17 +2015,7 @@ components:
       title: "MenuEntity"
       required:
         [
-          "lastUpdate",
-          "TTL",
-          id,
-          "status",
-          "basicInfo",
-          "services",
-          "items",
-          "menus",
-          "categories",
-          "itemOffers",
-        ]
+          "lastUpdate", "TTL", id, "status", "basicInfo", "services", "items", "menus", "categories", "itemOffers",]
       properties:
         lastUpdate:
           type: "string"
@@ -2254,7 +2243,7 @@ components:
           items:
             type: "string"
             enum:
-              - "BURGUERS"
+              - "BURGERS"
               - "PIZZA"
               - "FAST_FOOD"
               - "HOT_DOG"
@@ -2321,18 +2310,15 @@ components:
           description: "Image to be used as the merchant logo"
           allOf:
             - $ref: "#/components/schemas/Image"
-          example: "https://food-company.com/logo.png"
         bannerImage:
           type: "object"
           description: "Image to be used as the merchant banner (the banner display depends on the client application interface)"
           allOf:
             - $ref: "#/components/schemas/Image"
-          example: "https://food-company.com/banner.png"
         createdAt:
           type: "string"
           format: date-time
           description: "Merchant creation date in ISO timestamp format but with type String."
-          example: "2021-05-10T20:45:10.332Z"
 
     ListMerchant:
       type: "array"
@@ -2427,7 +2413,8 @@ components:
             required: ["latitude", "longitude"]
             properties:
               latitude:
-                type: "string"
+                type: "number"
+                multipleOf: 0.00001
                 description: "Indicates the latitude coordinate of the polygon point"
               longitude:
                 type: "string"
@@ -2437,7 +2424,7 @@ components:
           description: "Price of the fee for this polygon"
           allOf:
             - $ref: "#/components/schemas/Price"
-          example: { value: 5, currency: "R$" }
+          example: { value: 5, currency: "BRL" }
         estimateDeliveryTime:
           type: "integer"
           description: "Estimate delivery time for this polygon in minutes"
@@ -2471,7 +2458,7 @@ components:
                 description: "Price of the fee for this CIRCLE size."
                 allOf:
                   - $ref: "#/components/schemas/Price"
-                example: { value: 5, currency: "R$" }
+                example: { value: 5, currency: "BRL" }
               estimateDeliveryTime:
                 type: "integer"
                 description: "Estimate delivery time for this CIRCLE size in minutes."
@@ -2493,7 +2480,7 @@ components:
           type: "string"
           pattern: "^[A-Z]{3}$"
           description: "The 3-letter ISO 4217 currency code."
-          example: "R$"
+          example: "BRL"
 
     ServiceHours:
       type: "object"
@@ -2633,12 +2620,11 @@ components:
 
     NutritionalInfo:
       type: "object"
-      title: "Contact Phones"
+      title: "Nutritional Info"
       required: ["description", "calories"]
       properties:
         description:
           type: "string"
-          format: "UUID"
           description: 'Nutrition information in free text. For example "Contains preservatives".'
           example: "Contains preservatives"
         calories:
@@ -2873,7 +2859,7 @@ components:
           description: "Price of the menu item offer. Original and actual values can be informed, for showing discounts."
           allOf:
             - $ref: "#/components/schemas/ItemPrice"
-          example: { value: 43, originalValue: 43, currency: "R$" }
+          example: { value: 43, originalValue: 43, currency: "BRL" }
         availabilityId:
           type: "array"
           description: "The id values of `Availability` entities which provide details on when the menu item offer is available. Default assumes an `ItemOffer` is available at all times."
@@ -3519,7 +3505,7 @@ components:
                   type: "string"
                   pattern: "^[A-Z]{2}$"
                   description: "Two-letter ISO 3166-1 alpha-2 country code."
-                  example: "Brazil"
+                  example: "BR"
                 state:
                   type: "string"
                   description: "State"
@@ -3988,7 +3974,7 @@ components:
           type: "string"
           pattern: "^[A-Z]{2}$"
           description: "Two-letter ISO 3166-1 alpha-2 country code."
-          example: "Brazil"
+          example: "BR"
         "state":
           type: "string"
           description: "State"
@@ -4054,7 +4040,7 @@ components:
           type: "string"
           pattern: "^[A-Z]{3}$"
           description: "The 3-letter ISO 4217 currency code."
-          example: "R$"
+          example: "BRL"
 
     Repository:
       type: "object"
@@ -4403,7 +4389,7 @@ components:
     DeliveryEvent:
       description: Delivery Event
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [type, datetime]
       properties:
         type:
           type: string
@@ -4435,7 +4421,7 @@ components:
     DeliveryEventDenied:
       description: Delivery Event
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [reason]
       discriminator:
         propertyName: reason
         mapping:
@@ -4518,7 +4504,7 @@ components:
     DeliveryProblem:
       description: Delivery Event
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [reason, datetime, canFinishDeliver, needMerchantAction]
       properties:
         reason:
           type: string
@@ -4554,7 +4540,7 @@ components:
     DeliveryProblemHistory:
       description: Delivery Event
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [reason, datetime, resolved]
       properties:
         reason:
           type: string
@@ -4595,12 +4581,10 @@ components:
           format: date-time
           description: "REsolution Datetime"  
 
-    
-
     ChosenVehicle:
       description: Delivery Order Response Object
       type: object
-      required: [id]
+      required: [type, container]
       properties:
         type:
           type: string
@@ -4625,7 +4609,7 @@ components:
     DeliveryAvailabilityPrice:
       description: Delivery Order Object
       type: object
-      required: [orderId, orderDisplayId]
+      required: [pickupAddress, returnToMerchant, canCombine, deliveryAddress, vehicle, limitTimes, totalOrderPrice, totalWeight]
       properties:
         merchant:
           type: "object"
@@ -4705,7 +4689,6 @@ components:
     DeliveryAvailabilityPriceResponse:
       description: Delivery Order Response Object
       type: object
-      required: [id]
       properties:
         deliveryPrice:
           description: "Delivery Pricing Info"
@@ -4732,7 +4715,7 @@ components:
     ETA:
       description: ETA
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [pickupEtaMinutes, pickupEtaDatetime, deliveryEtainMinutes, deliveryEtaDatetime, maxDeliveryTime]
       properties:
         pickupEtaMinutes:
           type: integer
@@ -4776,7 +4759,7 @@ components:
     GeoLocalization:
       description: Delivery Event
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [latitude, longitude, distanceToPickup, distanceToDelivery, timestamp]
       properties:
         latitude:
           type: string
@@ -4828,7 +4811,7 @@ components:
     DeliveryCancel:
       description: Delivery Cancel
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [reason]
       properties:
         reason:
           type: string
@@ -4854,6 +4837,7 @@ components:
           
     DeliveryCancelResponse:
       type: object
+      required: [additionalCharges]
       properties:
         additionalCharges:
           type: boolean
@@ -4895,7 +4879,6 @@ components:
     DeliveryOrderPicked:
       type: "object"
       title: "Order Picked"
-      required: ["reason", "code"]
       properties:
         pickupDate:
           type: "string"
@@ -4925,7 +4908,7 @@ components:
     DeliveryOrderDetails:
       description: Delivery Order Event Object
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [deliveryId, orderId, orderDisplayId, merchant, customerName, events, vehicle, deliveryPrice, times, deliveryDetailsURL]
       properties:
         deliveryId:
           type: "string"
@@ -4996,7 +4979,7 @@ components:
     DeliveryTimes:
       description: ETA
       type: object
-      required: [id, orderId, orderDisplayId]
+      required: [deliveryEtaDate, maxDeliveryTime, isDeliveryFinished]
       properties:
         deliveryEtaDate:
           type: string
@@ -5045,9 +5028,9 @@ components:
               unit: "UNIT",
               quantity: 1,
               specialInstructions: "Do not put onions.",
-              unitPrice: { value: 43.00, currency: "R$" },
-              optionsPrice: { value: 50.00, currency: "R$" },
-              totalPrice: { value: 50.00, currency: "R$" },
+              unitPrice: { value: 43.00, currency: "BRL" },
+              optionsPrice: { value: 50.00, currency: "BRL" },
+              totalPrice: { value: 50.00, currency: "BRL" },
               options:
                 [
                   {
@@ -5056,8 +5039,8 @@ components:
                     externalCode: "23",
                     unit: "UNIT",
                     quantity: 1,
-                    unitPrice: { value: 50.00, currency: "R$" },
-                    price: { value: 50.00, currency: "R$" },
+                    unitPrice: { value: 50.00, currency: "BRL" },
+                    price: { value: 50.00, currency: "BRL" },
                     specialInstructions: "None",
                   },
                   {
@@ -5066,8 +5049,8 @@ components:
                     externalCode: "24",
                     unit: "UNIT",
                     quantity: 1,
-                    unitPrice: { value: 30.00, currency: "R$" },
-                    price: { value: 30.00, currency: "R$" },
+                    unitPrice: { value: 30.00, currency: "BRL" },
+                    price: { value: 30.00, currency: "BRL" },
                     specialInstructions: "None",
                   },
                 ],
@@ -5080,34 +5063,34 @@ components:
               type: "DELIVERY_FEE",
               receivedBy: "MARKETPLACE",
               receiverDocument: "1234",
-              price: { value: 5.00, currency: "R$" },
+              price: { value: 5.00, currency: "BRL" },
               observation: "None",
             },
           ]
         discounts:
           [
             {
-              amount: { value: 20.00, currency: "R$" },
+              amount: { value: 20.00, currency: "BRL" },
               target: "DELIVERY_FEE",
               sponsorshipValues:
                 [
                   {
                     name: "MARKETPLACE",
-                    amount: { value: 10.00, currency: "R$" },
+                    amount: { value: 10.00, currency: "BRL" },
                   },
                   {
                     name: "MERCHANT",
-                    amount: { value: 10.00, currency: "R$" },
+                    amount: { value: 10.00, currency: "BRL" },
                   },
                 ],
             },
           ]
         total:
           {
-            itemsPrice: { value: 50.00, currency: "R$" },
-            otherFees: { value: 5.00, currency: "R$" },
-            discount: { value: 20.00, currency: "R$" },
-            orderAmount: { value: 35.50, currency: "R$" },
+            itemsPrice: { value: 50.00, currency: "BRL" },
+            otherFees: { value: 5.00, currency: "BRL" },
+            discount: { value: 20.00, currency: "BRL" },
+            orderAmount: { value: 35.50, currency: "BRL" },
           }
         payments:
           prepaid: 55.00
@@ -5116,7 +5099,7 @@ components:
             [
               {
                 value: 55.00,
-                currency: "R$",
+                currency: "BRL",
                 method: "FOOD_VOUCHER",
                 methodInfo: "None",
               },
@@ -5132,7 +5115,7 @@ components:
         delivery:
           deliveredBy: "MERCHANT"
           deliveryAddress:
-            country: "Brazil"
+            country: "BR"
             streetName: "Gomes de Carvalho Street"
             formattedAddress: "string"
             streetNumber: "100"
@@ -5164,11 +5147,11 @@ components:
           averagePreparationTime: 20
           minOrderValue:
             value: 20.00
-            currency: "R$"
+            currency: "BRL"
           merchantType: "RESTAURANT"
           merchantCategories: ["PIZZA", "FAMILY_MEALS", "PREMIUM"]
           address:
-            country: "Brazil"
+            country: "BR"
             state: "SP"
             city: "São Paulo"
             district: "Moema"
@@ -5180,7 +5163,7 @@ components:
             longitude: -46.63630
           contactEmails: "food@company.com"
           contactPhones:
-            [{ commercialNumber: "11999999999", whatsappNumber: "11998888888" }]
+            { commercialNumber: "11999999999", whatsappNumber: "11998888888" }
           logoImage:
             URL: "https://food-company.com/logo.png"
             CRC-32: 432098ASDSR
@@ -5195,13 +5178,46 @@ components:
               status: "AVAILABLE",
               serviceType: "DELIVERY",
               menuId: "f627ccdc-6789-456f-a782-148538d5035b",
-              serviceArea:
-                {
-                  id: "01339e6d-520b-429e-bc7c-dcfd2df42278",
-                  geoMidpointLatitude: -20.2333,
-                  geoMidpointLongitude: -20.8383,
-                  geoRadius: 1000,
-                },
+              serviceArea: {
+                "id": "f078e8e2-3044-4eec-b4a8-8359810de124",
+                "polygon": [
+                    {
+                        "geoCoordinates": [
+                            {
+                                "latitude": -20.2333,
+                                "longitude": -20.8383
+                            },
+                            {
+                                "latitude": -20.8500,
+                                "longitude": -21.0000
+                            },
+                            {
+                                "latitude": -21.1500,
+                                "longitude": -21.9548
+                            }
+                        ],
+                        "price": {
+                            "value": 5,
+                            "currency": "BRL"
+                        },
+                        "estimateDeliveryTime": 25
+                    }
+                ],
+                "geoRadius": {
+                    "geoMidpointLatitude": -20.2333,
+                    "geoMidpointLongitude": -20.8383,
+                    "radius": [
+                        {
+                            "size": 10,
+                            "price": {
+                                "value": 5.50,
+                                "currency": "BRL"
+                            },
+                            "estimateDeliveryTime": 10
+                        }
+                    ]
+                }
+            },
               serviceHours:
                 {
                   id: "fb093d8c-2ca5-40fb-afcf-472fbdae81cc",
@@ -5215,13 +5231,25 @@ components:
                             "WEDNESDAY",
                             "THURSDAY",
                             "FRIDAY",
-                          ],
-                      },
+                          ],                     
                       timePeriods:
                         {
                           startTime: "10:00:00.000Z",
                           endTime: "18:00:00.000Z",
-                        },
+                        }
+                      },
+                      {
+                        dayOfWeek:
+                          [
+                            "SATURDAY",
+                            "SUNDAY",
+                          ],                     
+                      timePeriods:
+                        {
+                          startTime: "14:00:00.000Z",
+                          endTime: "18:00:00.000Z",
+                        }
+                      }
                     ],
                   holidayHours:
                     [
@@ -5284,7 +5312,7 @@ components:
               unit: "unit",
             },
             {
-              id: 7e507cab-7235-4f75-a0c2-e955fb2f2048",
+              id: 7e507cab-7235-4f75-a0c2-e955fb2f2048,
               name: "1/2 Mozzarella",
               description: "Delicious mozzarella pizza.",
               externalCode: "24",
@@ -5302,7 +5330,7 @@ components:
               unit: "unit",
             },
             {
-              id: 2c0f3447-5309-49cc-a167-4eac5c664470",
+              id: 2c0f3447-5309-49cc-a167-4eac5c664470,
               name: "Banana",
               description: "Banana Pizza with cream.",
               externalCode: "25",
@@ -5367,20 +5395,20 @@ components:
         itemOffers:
           [
             {
-              id: f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9",
-              itemid: 732bd31e-77fc-47ee-88ee-a0437f97b198",
+              id: f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9,
+              itemId: 732bd31e-77fc-47ee-88ee-a0437f97b198,
               index: 0,
-              price: { value: 43.00, originalValue: 43.00, currency: "R$" },
+              price: { value: 43.00, originalValue: 43.00, currency: "BRL" },
               availabilityId:
                 ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
               optionGroupsId:
                 ["22815773000169-fe67e551-f42f-499a-8afb-0ed893c71fa3"],
             },
             {
-              id: 377b99ba-5413-43d1-b875-7cdcaa72860e",
-              itemid: 7e507cab-7235-4f75-a0c2-e955fb2f2048",
+              id: 377b99ba-5413-43d1-b875-7cdcaa72860e,
+              itemId: 7e507cab-7235-4f75-a0c2-e955fb2f2048,
               index: 1,
-              price: { value: 30.00, originalValue: 30.00, currency: "R$" },
+              price: { value: 30.00, originalValue: 30.00, currency: "BRL" },
               availabilityId:
                 ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
               optionGroupsId:
@@ -5390,7 +5418,7 @@ components:
         optionGroups:
           [
             {
-              id: fe67e551-f42f-499a-8afb-0ed893c71fa3",
+              id: fe67e551-f42f-499a-8afb-0ed893c71fa3,
               index: 0,
               name: "Choose your salted pizza flavor",
               description: "Choose your salted pizza flavor.",
@@ -5401,25 +5429,25 @@ components:
               options:
                 [
                   {
-                    id: e5232f14-430c-4a94-8ff6-289d5a16a87a",
-                    itemid: 502ecf11-0509-48ed-b63c-6211c48fd9b9",
+                    id: e5232f14-430c-4a94-8ff6-289d5a16a87a,
+                    itemId: 502ecf11-0509-48ed-b63c-6211c48fd9b9,
                     index: 0,
                     price:
-                      { value: 50.00, originalValue: 50.00, currency: "R$" },
+                      { value: 50.00, originalValue: 50.00, currency: "BRL" },
                     maxPermitted: 1,
                   },
                   {
-                    id: e5232f14-430c-4a94-8ff6-289d5a16a87a",
-                    itemid: 7e507cab-7235-4f75-a0c2-e955fb2f2048",
+                    id: e5232f14-430c-4a94-8ff6-289d5a16a87a,
+                    itemId: 7e507cab-7235-4f75-a0c2-e955fb2f2048,
                     index: 1,
                     price:
-                      { value: 43.00, originalValue: 43.00, currency: "R$" },
+                      { value: 43.00, originalValue: 43.00, currency: "BRL" },
                     maxPermitted: 1,
                   },
                 ],
             },
             {
-              id: c524c066-96fa-458d-b78c-3712661529b3",
+              id: c524c066-96fa-458d-b78c-3712661529b3,
               index: 0,
               name: "Choose your sweeted pizza flavor",
               description: "Choose your sweeted pizza flavor.",
@@ -5430,11 +5458,11 @@ components:
               options:
                 [
                   {
-                    id: 2419d582-357f-4149-9089-12321537f147",
-                    itemid: 2c0f3447-5309-49cc-a167-4eac5c664470",
+                    id: 2419d582-357f-4149-9089-12321537f147,
+                    itemId: 2c0f3447-5309-49cc-a167-4eac5c664470,
                     index: 0,
                     price:
-                      { value: 30.00, originalValue: 30.00, currency: "R$" },
+                      { value: 30.00, originalValue: 30.00, currency: "BRL" },
                     maxPermitted: 1,
                   },
                 ],
@@ -5506,7 +5534,7 @@ components:
     #         "orderCreatedAt": "2021-01-26T18:14:20+03:00"
     #     "totalPrice":
     #         "value": 39.5
-    #         "currency": "R$"
+    #         "currency": "BRL"
     #     "totalWeight": 89
     #     "volumes": 2
     #     "specialInstructions": "Pratos quentes"
@@ -5522,7 +5550,7 @@ components:
     #               ],
     #               "amount": {
     #                   "value": 39.5,
-    #                   "currency": "R$"
+    #                   "currency": "BRL"
     #               }
     #           }
     #       ],
@@ -5595,7 +5623,7 @@ components:
     #   ]
     #   "deliveryPrice": {
     #       "value": 30.98,
-    #       "currency": "R$"
+    #       "currency": "BRL"
     #   }
     #   "priceTable": "NORMAL | DINAMICA"
     #   "additionalPricePerc": 5
