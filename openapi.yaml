@@ -16,7 +16,7 @@ info:
     # ► ------- OPEN DELIVERY ------- ◄
 
     # └► Introduction
-      **Open Delivery** proposes to solve the challenge of organizing the flow of information between merchants and ordering applications, establishing a single communication standard for all, through a set of REST APIs.
+      **Open Delivery** proposes to solve the challenge of organizing the flow of information between merchants and **Ordering Applications**, establishing a single communication standard for all, through a set of REST APIs.
       Thus, menus and orders are standardized and customer requests are received in a single place, in an organized and efficient way, allowing the merchant to work with more partners in the delivery environment.
 
     # └► Table Of Contents
@@ -25,6 +25,7 @@ info:
 
     **[General and Common Information](#section/-GENERAL-INFO-)**    
     This is information that is valid for all versions that exist so far.
+      - **[How to Start](#section/How-to-Start-(Setup-Guide))**
       - **[Open Delivery API Evolution](#section/Open-Delivery-API-Evolution)**
       - **[General Guidelines](#section/General-Guidelines)**
       - **[Error Handling](#section/Error-Handling)**
@@ -36,7 +37,6 @@ info:
       - **[Security](#tag/securitySection)**
       - **[Merchant](#tag/merchantSection)**
       - **[Order](#tag/orderSection)**
-      - **[Sales Report](#tag/salesReportSection)**
 
     **[Version 1.1.0-rc.X](#tag/versionSection2)**  
     Endpoints that will be released with version 1.1.0
@@ -57,6 +57,129 @@ info:
     # 
     # ► ------- GENERAL INFO -------- ◄
 
+    # └► How to Start (Setup Guide)
+
+    The Open Delivery API proposes the implementation of a single communication standard between the various parts that make up the delivery environment. This documentation contains all the definitions needed for interested systems and platforms to implement it.
+
+    Open Delivery does not have a server or baseURL. It is up to each company that implements the standard to use its infrastructure to host the endpoints.
+
+    This section seeks to summarize the Open Delivery documentation as a whole, helping the different parts of the integrations to understand what needs to be developed and parameterized. 
+
+    First, it is recommended to read all the documentation to understand the different processes and flows of the integrations. 
+
+    After reading and understanding the documentation as a whole, companies interested in implementing the standard in their platforms and systems can use this guide to assist in the implementation.
+
+    ## Parties Involved
+
+    - **ORDERING APPLICATION**: It is the platform where the final consumer will choose his items and place the order. It is responsible for reading the merchant data exposed by the SOFTWARE SERVICE and sending the orders to the SOFTWARE SERVICE as well.
+              
+    - **SOFTWARE SERVICE**: It is the merchant management platform. It is responsible for exposing the merchant data (registration data, service data, and menus) and receiving the orders from the ORDERING APPLICATION.
+
+      > There may also be applications that will perform a hub function, connecting the ORDERING APPLICATION to the SOFTWARE SERVICE. In this context, these intermediate applications, can play the role of both the ORDERING APPLICATION (when communicating with a SOFTWARE SERVICE) as well as the SOFTWARE SERVICE (when communicating with the ORDERING APPLICATION).
+
+    - **LOGISTIC SERVICE**: It is the platform responsible for receiving calls for new deliveries from SOFTWARE SERVICE or ORDERING APPLICATION, and sending the tracking of the deliveries.
+
+    ## Development
+
+    Since Open Delivery is not the host of the APIs, it is up to the companies interested in using the standard to develop the Open Delivery standard APIs in their systems and platforms using this documentation as a guideline. 
+
+    Listed below are the different Routes that each party needs to implement and make available in their systems:
+
+    | |ORDERING APPLICATION|SOFTWARE SERVICE|LOGISTIC SERVICE|
+    |-|:------------------:|:--------------:|:--------------:|
+    |**[AUTHENTICATION](#tag/authentication)**|||||
+    |[POST /oauth/token](#operation/getToken)|X||X|
+    |--------------------------------||||
+    |**[MERCHANT](#tag/merchantSection)**|||||
+    |[GET /merchant](#operation/getMerchant)||X||
+    |[POST /merchantUpdate](#operation/menuUpdated)|X||
+    |[GET /merchantStatus](#tag/merchantStatus)|X|||
+    |--------------------------------||||
+    |**[ORDER](#tag/ordersSection)**|||||
+    |[GET /events:polling ](#operation/pollingEvents)|X|||
+    |[POST /events/acknowledgment](#operation/pollingAcknowledgment)|X|||
+    |[POST /orderUpdate](#operation/newEvent)||X||
+    |||||
+    |[GET /orders/{orderId}](#operation/ordersDetails)|X|||
+    |[POST /orders/{orderId}/confirm](#operation/confirmOrder)|X|||
+    |[POST /orders/{orderId}/readyForPickup](#operation/orderReady)|X|||
+    |[POST /orders/{orderId}/dispatch](#operation/dispatchOrder)|X||
+    |||||
+    |[POST /orders/{orderId}/requestCancellation](#operation/requestCancellation)|X|||
+    |[POST /orders/{orderId}/acceptCancellation](#operation/cancellationAccepted) |X|||
+    |[POST /orders/{orderId}/denyCancellation](#operation/cancellationDenied)|X|||
+    |--------------------------------||||
+    |**[LOGISTICS](#tag/logisticsSection)**|||||
+    |[POST /logistics/delivery](#operation/logisticsNewDelivery)|||X|
+    |[POST /logistics/orderPicked/{orderId}](#operation/logisticsPicked)|||X|
+    |[POST /logistics/finishDelivery/{orderId}](#operation/logisticsFinish)|||X|
+    |[POST /logistics/handleProblem/{orderId}](#operation/logisticsProblem)|||X|
+    |[POST /logistics/cancel/{orderId}](#operation/logisticsCancel)|||X|
+    |[GET /logistics/delivery/{orderId}](#operation/logisticDetails)|||X|
+    |[POST /logistics/availability](#tag/logisticPrice)|||X|
+    |[POST /deliveryUpdate](#operation/newLogisticEvent) |X|X||
+
+     ## Parametrizations
+
+      > **IMPORTANT: Before reading this section, it is recommended the reading of the complete documentation, for a better understanding of the different required parameterizations.**
+
+      Once the endpoints are implemented, the parties interested in integrating via the Open Delivery stantard should provide some parameters for the other party to correctly connect to its routes. 
+
+      Below is a list of information that each party must provide to the other party for the integrations to occur, i.e., you should consider that the information below will be created as parameters on the endpoint that will call the endpoints.
+
+      - **PARAMETERS IN THE SOFTWARE SERVICE   
+      (ORDERING APPLICATION --> SOFTWARE SERVICE)**
+
+        - **{baseURL}** : The {baseURL} is the parameter that indicates the base address, i.e. the constant part of the address, where the routes will be called. The **Ordering Application** can provide up to 2 different base URLs:
+          - {baseURL} for authentication: where the token route will be hosted.
+          - {baseURL} for the other routes.
+
+          The **Ordering Application** can use only one {baseURL} if it wishes.
+        
+        - **clientId** and **clientSecret**: The **Ordering Application** is responsible for providing the credentials for authentication to be performed through the authentication endpoint. 
+        
+            > IMPORTANT: As described in the authentication section of the documentation, credentials must be generated BY MERCHANT and not by **Software Service**, that is, even if several MERCHANTS use the same **Software Service**, each of the MERCHANT will have a unique clientId and clientSecret.
+
+        - **AppId**: It is the unique ID of the **Ordering Application**. It must be generated by the **Ordering Application** itself, and once generated, it must be informed to all the **Software Service**S that it will integrate. Since the **AppId** is a unique key of the **Ordering Application**, you must not create oneAppId** per **Software Service**S, but the same key for all of them.
+      > The companies that play the role of hub, intermediating the integrations between the **Ordering Application** and the **Software Service**, must also generate their own **AppId**, different from the **Ordering Application**'s AppId.
+
+      - **PARAMETERS IN ORDERING APPLICATION  
+      (SOFTWARE SERVICE --> ORDERING APPLICATION)**
+
+        - **{baseURL} from the `GET /merchant` endpoint:** The **Ordering Application** must be provided with the {baseURL} to access the GET /merchant route to obtain the merchant's information. 
+
+          > IMPORTANT: Each merchant that the **Software Service** works with must have a unique {baseURL}.
+        - **apiKey**: If the GET /merchant endpoint is implemented using authentication, it is necessary that the **Software Service** provides the apiKey referring to the entered merchant.
+        
+        - **Order Event Webhook**: If both parties are going to work with sending order events via webhook, it is necessary to provide the URL of the webhook.   
+      Default webhook route: 
+      `POST {baseURL}/orderEvent`
+
+      - **PARAMETERS IN THE SOFTWARE SERVICE/ORDERING APPLICATION  
+      (LOGISTIC SERVICE --> SOFTWARE SERVICE/ORDERING APPLICATION)**
+
+      - **{baseURL}** : The {baseURL} is the parameter that indicates which is the base address, i.e. the constant part of the address, where the routes will be called. The **Logistic Service** can provide up to 2 different base URLs:
+          - {baseURL} for authentication: where the token route will be hosted.
+          - {baseURL} for the other routes.
+
+          The **Logistic Service** will be able to use only one {baseURL} if it wishes.
+        
+        - **clientId** and **clientSecret**: The **Logistic Service** is responsible for providing the credentials for authentication to be performed through the authentication endpoint. 
+        
+            > IMPORTANT: As described in the authentication section of the documentation, the credentials must be generated BY MERCHANT and not by **Software Service**/**Ordering Application**, that is, even if several MERCHANTS use the same **Software Service**/**Ordering Application**, each of the MERCHANT will have a unique clientId and clientSecret.
+
+        - **AppId**: It is a unique identification of the **Logistic Service**. It must be generated by the **Logistic Service** itself and once generated, it must be informed to all the **Software Service**S/**Ordering Application** to which it will integrate. As the **AppId** is a unique key of the **Logistic Service**, it must not be created an **AppId** per **Software Service**S/**Ordering Application**, but the same key must be informed for all.
+
+      - **PARAMETERS IN THE LOGISTIC SERVICE  
+      (SOFTWARE SERVICE/ORDERING APPLICATION --> LOGISTIC SERVICE)**
+
+        - **Tracking Event Webhook**: It is necessary to inform the URL of the webhook to receive the tracking and event updates of the delivery order.   
+      Default webhook route: 
+      `POST {baseURL}/deliveryEvent`
+
+        - **MerchantId**: It is a unique ID of the MERCHANT. Similar to the **AppId** but for Merchant. It must be generated by **Software Service**S and once generated, it must be informed to all **Logistic Services** it will integrate with. Since the **MerchantId** is a unique key, a **MerchantId** must not be created per **Logistic Service**, but the same key must be informed for all. 
+        The **Ordering Application** must send the **MerchantId** received previously through its integration with the **Software Service**.
+        
     # └► Open Delivery API Evolution
 
      The **Open Delivery** API seeks to respect [SemVer](https://semver.org/). In this sense, compatible changes should not generate a new major version.
@@ -79,16 +202,44 @@ info:
 
     # └► General Guidelines
 
-     - **DateTime, Date and Time values**: For properties that require a DateTime, Date or Time value, use the formats specified in date-time, date and time formats (following the [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14) specifications)
+     - **Date-Time, Date and Time values**: For properties that require a Date-Time, Date or Time value, use the formats specified in date-time, date and time formats (following the [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14) specifications)
+      
+      > **ALL DATES MUST BE SENT USING UTC AS DEFAULT.**   
+      > (This way it is simpler for the receiving agent to convert to local time.)
+
       For example:
       
-      **2017-05-01T06:30:00-03:00** for date-time (As defined by date-time - [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14))\
+      **2017-05-01T06:30:00Z** for date-time (As defined by date-time - [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14))\
       **2017-05-01** for date (As defined by full-date - [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14))\
-      **08:08:00-03:00** for time (As defined by full-time - [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14))
+      **08:08:00Z** for time (As defined by full-time - [RFC3339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14))
 
     - **IDs**: Use an id property to identify all unique entities within an entity type. An id is a unique identifier of the entity of that type, but across entities, IDs can overlap.
 
     - **Null** values: Do not use the value null in place of objects. If an object is optional, you must omit it from your feed.
+
+    - **{baseURL}** : Since Open Delivery is not the host of the APIs, it is up to the companies interested in using the standard to provide the {baseURL}. Companies can provide up to two {baseURL}:
+        - {baseURL} for authentication: where the **[Get Access Token](#operation/getToken)** route will be hosted.
+        - {baseURL} for all other routes.
+
+        > It is also possible to use the same {baseURL} for all routes.
+
+    - **Sending arrays as request parameters:**
+
+      To send an array parameter on a request for any endpoint, use the following format:   
+      
+      - For `QUERY` parameters:
+      ```
+      ?param=X&param=Y&param=Z
+      ```
+
+      - For `HEADER` parameters:
+      ```
+          param: X
+          param: Y
+          param: Z
+      ```
+
+
 
     # └► Error Handling
 
@@ -154,7 +305,7 @@ tags:
 # Version Tags
 
   - name: versionSection
-    x-displayName: " ►►►► VERSION 1.0.0-rc.7 ◄◄◄◄"
+    x-displayName: " ►►►► VERSION 1.0.0-rc.13 ◄◄◄◄"
     x-traitTag: true
     description: |-
       All the information listed in this section is planned to be released in version **1.0.0** of the Open Delivery API.
@@ -166,23 +317,37 @@ tags:
     x-traitTag: true
     description: |-  
     
-        **Latest Changes:**  
-        Version [1.0.0-rc.7] - Nov 25, 2021
+        Latest Changes:  
         
-        #### Breaking changes:
-        - Changed the `out_of_stock_items` and `invalid_items` attributes of the `/orders/{orderId}/requestCancellation` endpoint to `outOfStockItems` and `invalidItems`.
+        ### Version [1.0.0-rc.13] - Mar 21, 2022
 
-        #### Other changes
-        * Restructured side menu to better separate sections;
-        * Removed the `format` attribute `description` from the `nutritionalInfo` of the Merchant `item` object that was incorrectly marked as "UUID";
-        * Corrected spelling of `BURGUER` option to `BURGER` in `merchantCategories` attribute of Merchant `BasicInfo` object;
-        * Fixed `BasicInfo` example where `logoImage` and `bannerImage` fields were incorrect.
+        ### Breaking Changes:
+        * [[Issue #79](https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/issues/79)] - Changed the name of some fields from the `delivery` > `deliveryAddress` object of the endpoint [GET /orders/{orderId}](#operation/ordersDetails)
+
+          * `streetName` to `street`
+          * `streetNumber` to `number`
+          * `neighborhood` to `district`
+
+            These changes are intended to standardize the fields with the rest of the documentation.
+
+        * Corrected the type of `index` fields in some entities to `integer`, thus standardizing with the rest of the documentation.
+        The entities updated were:
+
+          Merchant: [GET /merchant](#operation/getMerchant)
+          * `Category` - previously was `string`
+
+          Orders: [GET /orders/{orderId}](#operation/ordersDetails)
+          * `items` - previously was `number`
+          * `options` - previously was `number`
+
+        * Added the `merchantStatus` field to the [POST /merchantUpdate](#operation/menuUpdated) endpoint. This field should be used to Open or Close the **Merchant** within the **Ordering Application**. The endpoint description has also been updated to reflect the addition of the field.
+
 
         See the full changelog here:  
         https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
 
   - name: versionSection2
-    x-displayName: " ►►►► VERSION 1.1.0-rc.0 ◄◄◄◄"
+    x-displayName: " ►►►► VERSION 1.1.0-rc.6 ◄◄◄◄"
     x-traitTag: true
     description: |-
       All the information listed in this section is planned to be released in version **1.1.0** of the Open Delivery API.
@@ -193,14 +358,54 @@ tags:
     x-traitTag: true
     description: |-  
     
-        **Latest Changes:**  
-        Version: **1.1.0 rc.0**
+        Latest Changes:  
 
-        - Added Logistics API
+        ### Version [1.1.0-rc.6] - Mar 12, 2022
+
+        #### Breaking changes:
+        * [Issue #81](https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/issues/81)] - Added `customerName` field to the [POST /logistics/delivery](#operation/logisticsNewDelivery) endpoint.
+        * Changed `deliveryDetailsURL` field name to `externalTrackingURL` on [GET /logistics/delivery/{orderId}](#operation/logisticDetails)
+        * Changed the name of the `volumes` field to `packageQuantity` on the [POST /logistics/delivery](#operation/logisticsNewDelivery) endpoint
+        * Changed the name of some events:
+          - `PICKUP_STARTED` to `PICKUP_ONGOING`
+          - `DELIVERY_STARTED` to `DELIVERY_ONGOING`
+
+        #### Other Changes
+        * Added `packageVolume` field to the [POST /logistics/delivery] endpoint (#operation/logisticsNewDelivery)
+        * Added `externalTrackingURL` field to [POST /deliveryUpdate](#operation/newLogisticEvent) endpoint
+        * Added `containerSize` field to `Vehicle` object
+          Appended endpoints:
+          - [POST /logistics/delivery](#operation/logisticsNewDelivery)
+          - [POST /logistics/availability](#tag/logisticPrice)
+          - [POST /deliveryUpdate](#operation/newLogisticEvent)
+          - [GET /logistics/delivery/{orderId}](#operation/logisticDetails)
+        * Added a new section to the [logistics events](#tag/logisticOrder) explanations explaining how retries of a rejected request work.
+          
+        See the full changelog here:  
+        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG_1.1.x.md 
+
+
+  - name: versionSection3
+    x-displayName: " ►►►► VERSION 1.2.0-rc.0 ◄◄◄◄"
+    x-traitTag: true
+    description: |-
+      All the information listed in this section is planned to be released in version **1.2.0** of the Open Delivery API.
+
+      > This version is still in **'Beta'**, so minor changes may still occur until release.
+
+  - name: versionChangelog3
+    x-displayName: "└─► Changelog"
+    x-traitTag: true
+    description: |-  
+    
+        Latest Changes:  
+        
+        ### Version [1.0.0-rc.0] - Mar X, 2022
+
+        * First Release
 
         See the full changelog here:  
-        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md  
-
+        https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/blob/main/CHANGELOG.md 
 
 # Merchant Tags
 
@@ -371,7 +576,7 @@ tags:
     x-displayName: └───● Order Overview
     description: |-
 
-      This overview summarizes the **Open Delivery** Ordering flow and how it interacts with merchant **Software Services** and **Ordering Applications**.
+      This overview summarizes the **Open Delivery** Ordering flow and how it interacts with merchant **Software Service** and **Ordering Application**.
 
       ### Order Events
 
@@ -389,7 +594,7 @@ tags:
 
       ### Order Event Reception
 
-      Through Order Events, the '**Ordering Application**' communicates to the 'Software Service' the existence of a new order, as well as the other events of the order lifecycle.
+      Through Order Events, the '**Ordering Application**' communicates to the '**Software Service**' the existence of a new order, as well as the other events of the order lifecycle.
 
       **Open Delivery** provides two ways for merchant **Software Service** to be aware of new events:
 
@@ -537,7 +742,7 @@ tags:
     x-displayName: └───● Order Cancellation
     description: |-
 
-      An order can be canceled for several reasons and the initiative to cancel an order can come from the merchant, the customer, or the ordering application.   
+      An order can be canceled for several reasons and the initiative to cancel an order can come from the merchant, the customer, or the **Ordering Application**.   
       It may also happen that the delivery person requests the cancellation in some scenarios, such as when the customer is not found at the delivery address.
 
       > **Cancellation Rules**
@@ -554,7 +759,7 @@ tags:
 
       The cancellation can be requested by:
 
-      ### Software Service (Merchant):
+      ### **Software Service** (Merchant):
 
       <div align="center">
         <img src="https://abrasel-nacional.github.io/docs/images/software_cancel_request.png" />
@@ -564,7 +769,7 @@ tags:
 
       > **Penalties**
       >
-      > Avoid order cancellations! Excessive cancellations can result in some penalties (depending on the **Ordering Application's** policy) such as having the merchant temporarily closed on the platform.
+      > Avoid order cancellations! Excessive cancellations can result in some penalties (depending on the **Ordering Application**'s** policy) such as having the merchant temporarily closed on the platform.
 
       **Cancellation Validation**
 
@@ -589,13 +794,13 @@ tags:
       - ORDER_OUTSIDE_THE_DELIVERY_AREA
       - BLOCKED_CUSTOMER
       - OUTSIDE_DELIVERY_HOURS
-      - INTERNAL_DIFFICULTIES_OF THE RESTAURANT
+      - INTERNAL_DIFFICULTIES_OF_THE_RESTAURANT
       - RISK_AREA
       ``` 
 
       > **Important**: It is recommended that the **Ordering Application** makes a new request on the [/merchant](#operation/getMerchant) endpoint whenever a merchant makes a Cancellation request.
 
-      ### Ordering Application
+      ### **Ordering Application**
 
       <div align="center">
         <img src="https://abrasel-nacional.github.io/docs/images/orderingApp_cancel_request.png" />
@@ -622,22 +827,9 @@ tags:
       **[/orders/{orderId}/acceptCancellation](#operation/cancellationAccepted)**  
       **[/orders/{orderId}/denyCancellation](#operation/cancellationDenied)**
 
-      This request will be processed by the **Ordering Application's** cancellation service (asynchronously) and the merchant **Software Service** will receive in the next polling (or webhook) the following event(s):
+      This request will be processed by the **Ordering Application**'s** cancellation service (asynchronously) and the merchant **Software Service** will receive in the next polling (or webhook) the following event(s):
 
       CANCELLATION_DENIED or CANCELLED
-
-# Sales Report Tags
-
-  - name: salesReportSection
-    x-displayName: └─■ SALES REPORT
-    x-traitTag: true
-
-  - name: salesReport
-    x-displayName: └───● Sales Report Endpoint
-    description: |-
-
-      **Ordering Application** must provide an endpoint where merchants can view information about sales for orders placed and information about the transfer of funds to the merchant.
-
 
 # Logistics Tags
 
@@ -645,7 +837,7 @@ tags:
     x-displayName: └─■ LOGISTICS
     x-traitTag: true
     description: |-
-      This section covers the API referring to the operations with `Logistic Services`. 
+      This section covers the API referring to the operations with `**Logistic Services**`. 
       
       > The information below are still in release candidate (BETA) and will be tested in the coming months.
 
@@ -654,20 +846,19 @@ tags:
   - name: logisticOverview
     x-displayName: └───● Logistic Overview
     description: |-
-      Open Delivery provides a set of standards so that both merchants through their Software Service and Ordering Applications can request a new delivery to a logistics operator and track this delivery.
+      Open Delivery provides a set of standards so that both merchants through their **Software Services** and **Ordering Applications** can request a new delivery to a logistics operator and track this delivery.
 
       ## Logistics API Usage
 
-      Open Delivery's Logistic API aims to standardize the communication between a **requester** - which can be either a Software Service or an Ordering Application - and a company's software that provides logistic services (called here Logistic Service).  
+      Open Delivery's Logistic API aims to standardize the communication between a **requester** - which can be either a **Software Service** or an **Ordering Application** - and a company's software that provides **Logistic Services** (called here **Logistic Service**).  
       
-      > A Logistic Service can be either a company that specializes in delivery services or an Ordering Application that also provides delivery services. 
+      > A **Logistic Service** can be either a company that specializes in delivery services or an **Ordering Application** that also provides delivery services. 
       
-      > The Open Delivery logistics API only handles communications between the merchant software (or ordering application) and the software of the logistics operator. Communications and interfaces with the deliverers at the end are not covered in this documentation, leaving it up to the logistics companies to perform this interaction.
+      > The Open Delivery logistics API only handles communications between the merchant software (or **Ordering Application**) and the software of the logistics operator. Communications and interfaces with the deliverers at the end are not covered in this documentation, leaving it up to the logistics companies to perform this interaction.
       
       <div align="center">
         <img src="https://abrasel-nacional.github.io/docs/images/logisticsFlow.png" />
       </div>
-
 
       The endpoints provided here, cover the following functionalities:
 
@@ -688,18 +879,20 @@ tags:
 
       ### Events
 
-      This overview summarizes the **Open Delivery** delivery ordering flow and how it interacts with the requester (merchant **Software Services** or **Ordering Applications**) and the Logistics Services.
+      This overview summarizes the **Open Delivery** delivery ordering flow and how it interacts with the requester (merchant **Software Services** or **Ordering Applications**) and the **Logistic Services**.
 
       <div align="center">
         <img src="https://abrasel-nacional.github.io/docs/images/logisticsOrderFlow.png" />
       </div>
 
-      >  It is important to emphasize that the entire event flow is per Order and even though a delivery may have combined orders (see section below), for all operations in the flow, the id to be used is the `orderId` (initially informed by the requester at the /logistics/delivery endpoint). 
+      > The `PICKUP_ONGOING`, `DELIVERY_ONGOING` and `RETURNING_TO_MERCHANT` events are events that occur while the delivery man is on the move, so these events can be sent repeatedly in order to update the delivery man's location. The interval at which these events are sent is defined by each **Logistic Service**. 
+
+      > It is important to emphasize that the entire event flow is per Order and even though a delivery may have combined orders (see section below), for all operations in the flow, the id to be used is the `orderId` (initially informed by the requester at the /logistics/delivery endpoint). 
 
        ### Combining Orders
 
       The Open Delivery logistics API offers the option of combining more than one order into a single delivery.  
-      This can be done on both the **Software Service (or Ordering Application)** and the **Logistic Service** sides.
+      This can be done on both the **Software Service** (or **Ordering Application**) and the **Logistic Service** sides.
 
       To combine orders its necessary that at least one delivery is currently in progress.
       When requesting for a new delivery, you need to inform the `deliveryId` field of the ongoing delivery in the `combinedDeliveryId` field of the new request.
@@ -717,6 +910,12 @@ tags:
 
 
       > Since all event flow is per Order, then in the case of deliveries that have combined orders, an event message must be sent to each of the orders separately. 
+
+      ### Order Rejection and retries for the same order
+
+      If a new delivery order is rejected by the **Logistic Service**, regardless of the reason, the **Software Service** / **Ordering Application** can make a new attempt for the same order (same `orderId` and same `orderDisplayId`). The **Logistic Service** must receive this retry only if the last sent event for this order was the `REJECTED` event. If any other event has already been sent, then the **Logistic Service** will return a duplicate orderId error.
+
+      > The number of retries possible for the same order is defined by each **Logistic Service**.
 
   - name: logisticTracking
     x-displayName: └───● Delivery Tracking
@@ -755,11 +954,11 @@ tags:
     x-displayName: └───● Delivery Availability and Pricing
     description: |-
 
-      Endpoint used to check the availability of a `Logistic Service` to make a delivery with addresses and times already defined, as well as to obtain the price for this delivery.
+      Endpoint used to check the availability of a **`Logistic Service`** to make a delivery with addresses and times already defined, as well as to obtain the price for this delivery.
 
       This endpoint only simulates the acceptance of a new delivery request, using the information available at the time of the call. 
 
-      > The call to this endpoint does not generate any commitment to Logistic Service and should only be used as an estimate of the delivery values.  
+      > The call to this endpoint does not generate any commitment to **Logistic Service** and should only be used as an estimate of the delivery values.  
         To make a real delivery request, call this endpoint. 
 
   - name: logisticDetails
@@ -769,7 +968,19 @@ tags:
       Endpoint used to get detailed and history information for a specific delivery order. 
 
       > This endpoint should not be used as a way to get delivery tracking. This is already covered in the events webhook. The purpose of this route is to receive sporadic calls to get missing information or the complete history of events and problems.
-        Misuse of this endpoint can result in blockages by Logistic Service.
+        Misuse of this endpoint can result in blockages by **Logistic Service**.
+
+# Financial Report Tags
+
+  - name: financialReportSection
+    x-displayName: └─■ CONCILIATION
+    x-traitTag: true
+
+  - name: financialReport
+    x-displayName: └───● Financial Reports
+    description: |-
+
+      **Ordering Application** must provide an endpoint where merchants can view information about sales for orders placed and information about the transfer of funds to the merchant.
 
 x-tagGroups:
   - name: ".................................................................................................................."
@@ -811,12 +1022,6 @@ x-tagGroups:
     tags:
       - ordersStatus
       - ordersCancellation
-  - name: ""
-    tags:
-      - salesReportSection
-  - name: └──◌ Sales Report API
-    tags:
-      - salesReport
   # - name: ""
   #   tags:
   #     - repositorySection
@@ -837,12 +1042,18 @@ x-tagGroups:
       - logisticTracking
       - logisticDetails
       - logisticPrice
-
-#    - logisticStatus
-#    - logisticCancellationProblems
+  - name: ".................................................................................................................."
+    tags:
+      - versionSection3
+      - versionChangelog3     
+  - name: ""
+    tags:
+      - financialReportSection
+      - financialReport
 
 paths:
-  # Authentication
+
+# Authentication
 
   /oauth/token:
     post:
@@ -873,7 +1084,7 @@ paths:
         "500":
           description: "Unexpected error"
 
-  # Merchant
+# Merchant
 
   /merchant:
     get:
@@ -888,7 +1099,7 @@ paths:
         Endpoint to get all data of a specific merchant, such as basic info, menus, and services.
 
          >  This endpoint can optionally require an **apiKey** for authentication.
-         >  Check with the Software Service that hosts the endpoint whether authentication is required or not.
+         >  Check with the **Software Service** that hosts the endpoint whether authentication is required or not.
 
         <br /><br />
         <span style="text-decoration:underline; color:#26323880; font-size:13.006px">HOST:</span> **SOFTWARE SERVICE**
@@ -953,7 +1164,7 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  # Orders
+# Orders
 
   "/events:polling":
     get:
@@ -964,12 +1175,13 @@ paths:
           required: true
           schema:
             type: array
-            description: Subset of merchants to fetch events from. Must either be omitted or non-empty.
+            description: |-
+              Subset of merchants to fetch events from. Must either be omitted or non-empty.
+              > At this time, this field will only return data from the authenticated merchant, since authentication occurs per merchant and not per application. This field may be used in future versions. 
             items:
               $ref: "#/components/schemas/Merchant/properties/id"
         - name: "eventType"
           in: "query"
-          required: true
           schema:
             type: array
             description: |-
@@ -983,10 +1195,10 @@ paths:
               > `READY_FOR_PICKUP`: Order ready for pickup.\
               > `PICKUP_AREA_ASSIGNED` : Designated area to pick up the order.\
               > `CONCLUDED` : Order completed.\
-              > `CANCELLATION_REQUESTED` : Sent by the Software Service to the Ordering Application.\
-              > `CANCELLATION_REQUEST_DENIED` : It must be sent from the Ordering Application to the Software Service.\
+              > `CANCELLATION_REQUESTED` : Sent by the **Software Service** to the **Ordering Application**.\
+              > `CANCELLATION_REQUEST_DENIED` : It must be sent from the **Ordering Application** to the **Software Service**.\
               > `CANCELLED` : When the order is actually cancelled.\
-              > `ORDER_CANCELLATION_REQUEST`: It must be sent from the Ordering Application to the Software Service.
+              > `ORDER_CANCELLATION_REQUEST`: It must be sent from the **Ordering Application** to the **Software Service**.
             items:
               $ref: "#/components/schemas/Event/properties/eventType"
 
@@ -1012,7 +1224,11 @@ paths:
           content:
             "application/json":
               schema:
-                $ref: "#/components/schemas/Event"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+        "204":
+          description: "No content."       
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1026,6 +1242,7 @@ paths:
         $ref: "#/components/requestBodies/AckEvents"
       tags:
         - "ordersPolling"
+      operationId: pollingAcknowledgment
       summary: "Acknowledge Events"
       security:
         - OAuth2: [od.all]
@@ -1061,6 +1278,7 @@ paths:
             format: "UUID"
       tags:
         - "ordersDetails"
+      operationId: ordersDetails  
       summary: "Get Order Details"
       security:
         - OAuth2: [od.all]
@@ -1317,14 +1535,14 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  # Sales Report
+# Financial Report
 
   /salesReport:
     get:
-      operationId: "salesReport"
+      operationId: "financialReportById"
       tags:
-        - "salesReport"
-      summary: "Sales Report endpoint"
+        - "financialReport"
+      summary: "Financial Report endpoint"
       description: |-
         This endpoint is responsible for the sales report.
         <br /><br />
@@ -1359,7 +1577,7 @@ paths:
           content:
             "application/json":
               schema:
-                $ref: "#/components/schemas/SalesByMerchant"
+                $ref: "#/components/schemas/PaymentsByBatchId"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1368,6 +1586,58 @@ paths:
           $ref: "#/components/responses/NotFound"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+
+# Sales Report
+
+  # /salesReport:
+  #   get:
+  #     operationId: "salesReport"
+  #     tags:
+  #       - "salesReport"
+  #     summary: "Sales Report endpoint"
+  #     description: |-
+  #       This endpoint is responsible for the sales report.
+  #       <br /><br />
+  #       <span style="text-decoration:underline; color:#26323880; font-size:13.006px">HOST:</span> **ORDERING APPLICATION**
+
+  #       <span style="text-decoration:underline; color:#26323880; font-size:13.006px">DIRECTION:</span>
+  #       <div align="center">
+  #         <img src="https://abrasel-nacional.github.io/docs/images/directionGETSS_OA.png" />
+  #       </div>
+  #     parameters:
+  #       - name: id
+  #         in: "query"
+  #         required: true
+  #         schema:
+  #           type: "string"
+  #           format: "UUID"
+  #       - name: "startDate"
+  #         required: true
+  #         in: "query"
+  #         schema:
+  #           type: "string"
+  #           format: "date-time"
+  #       - name: "endDate"
+  #         required: true
+  #         in: "query"
+  #         schema:
+  #           type: "string"
+  #           format: "date-time"
+  #     responses:
+  #       "200":
+  #         description: "Successfully returns the report."
+  #         content:
+  #           "application/json":
+  #             schema:
+  #               $ref: "#/components/schemas/SalesByMerchant"
+  #       "400":
+  #         $ref: "#/components/responses/BadRequest"
+  #       "403":
+  #         $ref: "#/components/responses/AccessDenied"
+  #       "404":
+  #         $ref: "#/components/responses/NotFound"
+  #       "503":
+  #         $ref: "#/components/responses/ServiceUnavailable"
 
   # Repository
 
@@ -1443,7 +1713,7 @@ paths:
         Simulates a new delivery solicitation to know prices and delivery times.
       responses:
         "200":
-          description: "Successfully returns the merchant list."
+          description: "Successfully returns delivery availability and price."
           content:
             "application/json":
               schema:
@@ -1495,6 +1765,7 @@ paths:
             $ref: "#/components/schemas/DeliveryOrder/properties/orderId"
       tags:
         - "logisticDetails"
+      operationId: logisticDetails  
       summary: "Get delivery details"
       security: []
       description: |-
@@ -1535,7 +1806,7 @@ paths:
       description: "Inform the **Logistic Service** that the order was picked by delivery man at Merchant"
       responses:
         "200":
-          description: "Denied cancellation order confirmed."
+          description: "Order pickup has been confirmed."
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1567,7 +1838,7 @@ paths:
       description: "Indicates the completion of a delivery order"
       responses:
         "200":
-          description: "Denied cancellation order confirmed."
+          description: "Delivery completion has been confirmed. "
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1597,16 +1868,16 @@ paths:
         Handle problems that may occur during the delivery.
        
         > Problems can occur at any time during a delivery in progress.  
-        It is important that the **Logistic Service** always informs the **Software Service (or Ordering Application)** of a problem (via webhook), even if the problem does not require any action by the merchant to solve it.
+        It is important that the **Logistic Service** always informs the **Software Service** (or **Ordering Application**) of a problem (via webhook), even if the problem does not require any action by the merchant to solve it.
 
-        > Since there are other ways to solve delivery problems, such as via telephone or messaging applications, the implementation of this endpoint is optional, and the **Logistic Service** will inform the **Software Service (or Ordering Application)** of the need to use it.
+        > Since there are other ways to solve delivery problems, such as via telephone or messaging applications, the implementation of this endpoint is optional, and the **Logistic Service** will inform the **Software Service** (or **Ordering Application**) of the need to use it.
         <div align="center">
           <img src="https://abrasel-nacional.github.io/docs/images/logisticsProblem.png" />
         </div>
 
       responses:
         "200":
-          description: "Denied cancellation order confirmed."
+          description: "The problem has been addressed."
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1635,7 +1906,7 @@ paths:
       description: |-
           Requests cancellation of a order delivery in progress
 
-          > The **Software Service (or Ordering Application)** may request to cancel the delivery of an order at any time.  
+          > The **Software Service** (or **Ordering Application**) may request to cancel the delivery of an order at any time.  
           Depending on **Logistic Service** policies, additional fees may apply.
 
           > If the order being cancelled is in a combined delivery, when cancelling, the order informed will be unlinked from the delivery, not interrupting the progress of the other orders in the same delivery.
@@ -1645,7 +1916,7 @@ paths:
           </div>
       responses:
         "202":
-          description: "Successfully returns the merchant list."
+          description: "Cancel request has been accepted for processing."
           content:
             "application/json":
               schema:
@@ -1671,11 +1942,21 @@ x-webhooks:
 
 
         Information about a update in the systems.
+        
+        This endpoint can be used in the following ways:
 
+        **1 - Sent with an empty body:**  
+        This will force **Ordering Application** to make a new request to the **[GET /merchant](#operation/getMerchant)** endpoint to update all the **merchant** information.
 
-        Optionally it is possible to inform in the body of the request, one (and only one) entity type that has undergone a change.  
+        **2 - Sent with only the `merchantStatus` field:**  
+        This will force the opening or closing of the **merchant** within the **Ordering Application**, without forcing a new **[GET /merchant](#operation/getMerchant)** call.
 
-        > Once the notification is received, if the body of the request does not contain any entity type specified, then the **Ordering System** is expected to make a new request to the **[/merchant](#operation/getMerchant)** endpoint to update all the merchant information. 
+        **3 - Sent only with the `entityType` and `updatedObjects` fields:**  
+        This will force the **Ordering Application** to update only the sent objects, without forcing a new **[GET /merchant](#operation/getMerchant)** call.
+        > When the `entityType` field is populated, the `updatedObjects` field cannot be empty.
+
+        **4 - Sent the `merchantStatus`, `entityType` and `updatedObjects` fields:**  
+        This will force scenarios 2 and 3 to happen simultaneously.
 
         <br /><br />  
         <span style="text-decoration:underline; color:#26323880; font-size:13.006px">HOST:</span> **ORDERING APPLICATION**  
@@ -1717,7 +1998,7 @@ x-webhooks:
           schema:
             type: "string"
             format: "UUID"
-            description: "An unique Identificator of the `Ordering Applications`. The same ID must be sent to all `Software Services` that implements this webhook."
+            description: "An unique Identificator of the `**Ordering Applications**`. The same ID must be sent to all `**Software Service**s` that implements this webhook."
         - in: "header"
           name: "X-App-MerchantId"
           required: true
@@ -1772,7 +2053,7 @@ x-webhooks:
           schema:
             type: "string"
             format: "UUID"
-            description: "An unique Identificator of the `Logistic Service`. The same ID must be sent to all `Software Services` and `Ordering Applications` that implements this webhook."
+            description: "An unique Identificator of the **`Logistic Service`**. The same ID must be sent to all `**Software Service**s` and `**Ordering Applications**` that implements this webhook."
         - in: "header"
           name: "X-App-MerchantId"
           required: true
@@ -1823,7 +2104,7 @@ components:
     OAuth2:
       type: oauth2
       description:
-        "Oauth2 should be used for all API calls from the `Software Service` to the `Ordering Application`.\n
+        "Oauth2 should be used for all API calls from the **`Software Service`** to the **`Ordering Application`**.\n
 
         As of the time of this release only one scope will be used for all endpoints: `od.all`.
 
@@ -1882,7 +2163,6 @@ components:
             $ref: "#/components/schemas/OrderConfirmed"
 
     CancelRequest:
-      description: "Request for order cancellation has been accepted."
       required: true
       content:
         "application/json":
@@ -1942,6 +2222,7 @@ components:
           #     $ref: "#/components/examples/orderDeliveryEventExample"           
 
   responses:
+
     Accepted:
       description: "Request has been accepted for processing."
     BadRequest:
@@ -1976,15 +2257,15 @@ components:
     TokenRequest:
       type: "object"
       title: "TokenRequest"
-      required: ["clientId", "clientSecret", "grantType"]
+      required: ["client_id", "client_secret", "grant_type"]
       properties:
-        clientId:
+        client_id:
           type: "string"
           description: "Client identifier provided by the **Ordering Application**."
-        clientSecret:
+        client_secret:
           type: "integer"
           description: "Client Secret provided by the **Ordering Application**."
-        grantType:
+        grant_type:
           type: "string"
           description: "The OAuth grant type. Currently, the only supported grant type is `client_credentials`."
           enum:
@@ -1993,18 +2274,17 @@ components:
     TokenResponse:
       type: "object"
       title: "TokenResponse"
-      required: [""]
+      required: ["access_token, token_type"]
       properties:
-        accessToken:
+        access_token:
           type: "string"
-          format: "date-time"
           description: "A JWT representing the access token."
-        tokenType:
+        token_type:
           type: "string"
           description: "The token type. Currently, the only supported type is `bearer`"
           enum:
             - "bearer"
-        expiresIn:
+        expires_in:
           type: "number"
           description: "The token expiration time in seconds"
 
@@ -2020,7 +2300,7 @@ components:
         lastUpdate:
           type: "string"
           format: "date-time"
-          description: "The last modified date and time in ISO timestamp format but with type String. \n\nThis should be used in conjuction of the TTL field to update the information on the ordering aplication."
+          description: "The last modified date and time in ISO timestamp format but with type String. \n\nThis should be used in conjuction of the TTL field to update the information on the ordering aplication. \n\n(UTC date-time in ISO timestamp format)."
           example: "2021-05-27T20:45:10.332Z"
         TTL:
           type: "integer"
@@ -2031,7 +2311,6 @@ components:
           example: 500
         id:
           type: "string"
-          format: "UUID"
           description:
               "Unique Identifier. Identifies the merchant in the different systems that the merchant will communicate.
               \n\n Must be formatted with:  
@@ -2039,10 +2318,10 @@ components:
 
               > *Software Information is optional.
 
-              \n\n This id must be generated by the merchant's `Software Service`."
+              \n\n This id must be generated by the merchant's **`Software Service`**."
         status:
           type: "string"
-          description: "Indicates if the entity is Avaliable or Unavaliable. Only use this type when you must disable the entity due to an unexpected event and you don't know when the service will be re-established (e.g. do not use for holidays)."
+          description: "Indicates if the Merchant is Avaliable or Unavaliable. Only use this type when you must close (disable) the merchant due to an unexpected event and you don't know when the service will be re-established (e.g. do not use for holidays)."
           enum:
             - AVAILABLE
             - UNAVAILABLE
@@ -2112,7 +2391,7 @@ components:
         lastUpdate:
           type: "string"
           format: "date-time"
-          description: "The last modified date and time in ISO timestamp format but with type String. \n\nThis should be used in conjuction of the TTL field to update the information on the ordering aplication."
+          description: "The last modified date and time. \n\nThis should be used in conjuction of the TTL field to update the information on the ordering aplication. \n\n(UTC date-time in ISO timestamp format)."
         TTL:
           type: "integer"
           description: "Time to Live (in seconds).
@@ -2124,7 +2403,7 @@ components:
           format: "UUID"
           description:
             "Unique Identifier. Must be formatted with `Merchant Document + UUID`
-            \n\n This id must be generated by the company responsible for the merchant's menu and have to be informed in the Order object by the *ordering application*."
+            \n\n This id must be generated by the company responsible for the merchant's menu and have to be informed in the Order object by the ***Ordering Application***."
         status:
           type: "string"
           description: "Indicates if the entity is Avaliable or Unavaliable. Only use this type when you must disable the entity due to an unexpected event and you don't know when the service will be re-established (e.g. do not use for holidays)."
@@ -2318,7 +2597,7 @@ components:
         createdAt:
           type: "string"
           format: date-time
-          description: "Merchant creation date in ISO timestamp format but with type String."
+          description: "Merchant creation date and time. \n\n(UTC date-time in ISO timestamp format)."
 
     ListMerchant:
       type: "array"
@@ -2346,7 +2625,7 @@ components:
           type: "string"
           format: "UUID"
           description: "Unique Identifier"
-          example: "22815773000169-f078e8e2-3044-4eec-b4a8-8359810de123"
+          example: "f078e8e2-3044-4eec-b4a8-8359810de123"
         status:
           type: "string"
           description: "Indicates if the entity is Avaliable or Unavaliable. Only use this type when you must disable the entity due to an unexpected event and you don't know when the service will be re-established (e.g. do not use for holidays)."
@@ -2365,7 +2644,7 @@ components:
           description: "The id value of the `Menu` entity correlated to this `Service` entity."
           type: string
           format: UUID
-          example: "22815773000169-f627ccdc-6789-456f-a782-148538d5035b"
+          example: "f627ccdc-6789-456f-a782-148538d5035b"
         serviceArea:
           type: "object"
           description: "A conditional entity to implement (required if the Service entity associated has serviceType set to `DELIVERY`). Describes the geographical region in which food can be delivered."
@@ -2386,7 +2665,7 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the service area."
-          example: "22815773000169-01339e6d-520b-429e-bc7c-dcfd2df42278"
+          example: "01339e6d-520b-429e-bc7c-dcfd2df42278"
         polygon:
           type: "array"
           description: "If the `polygon` is chosen to be used, `geoRadius` is not required.\n\n\n\nA polygon or multipolygon expressed as a series of three or more space delimited points."
@@ -2414,11 +2693,12 @@ components:
             properties:
               latitude:
                 type: "number"
-                multipleOf: 0.00001
-                description: "Indicates the latitude coordinate of the polygon point"
+                description: "Indicates the latitude coordinate of the polygon point.\n\n\n\nLatitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+                example: -23.54809
               longitude:
-                type: "string"
-                description: "Indicates the longitude coordinate of the polygon point."
+                type: "number"
+                description: "Indicates the longitude coordinate of the polygon point.\n\n\n\nLongitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+                example: -46.63638                 
         price:
           type: "object"
           description: "Price of the fee for this polygon"
@@ -2436,12 +2716,12 @@ components:
       properties:
         geoMidpointLatitude:
           type: "number"
-          description: "Indicates the latitude coordinate at the center of the CIRCLE area."
-          example: -20.2333
+          description: "Indicates the latitude coordinate at the center of the CIRCLE area.\n\n\n\nLatitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -23.54809
         geoMidpointLongitude:
           type: "number"
-          description: "Indicates the longitude coordinate at the center of the CIRCLE area."
-          example: -20.8383
+          description: "Indicates the longitude coordinate at the center of the CIRCLE area.\n\n\n\nLongitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -46.63638  
         radius:
           type: "array"
           description: "Informations about each radius of the CIRCLE that the merchant serves."
@@ -2491,7 +2771,7 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the service hours."
-          example: "22815773000169-fb093d8c-2ca5-40fb-afcf-472fbdae81cc"
+          example: "fb093d8c-2ca5-40fb-afcf-472fbdae81cc"
         weekHours:
           type: array
           description: "A list of the day(s) of the week and time periods for which the service is valid."
@@ -2576,13 +2856,13 @@ components:
     Item:
       type: "object"
       title: "Item"
-      required: [id, "name", "description", "externalCode", "image", "unit"]
+      required: [id, "name", "description", "externalCode", "unit"]
       properties:
         id:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the item."
-          example: "22815773000169-732bd31e-77fc-47ee-88ee-a0437f97b198"
+          example: "732bd31e-77fc-47ee-88ee-a0437f97b198"
         name:
           type: "string"
           description: "Item name"
@@ -2595,7 +2875,7 @@ components:
         externalCode:
           type: "string"
           description: "Item External Code. (Tipically the merchant **Software Service** item code)"
-          example: "23"
+          example: "233467"
         image:
           type: "object"
           description: "Image of the item"
@@ -2609,13 +2889,15 @@ components:
         serving:
           type: "integer"
           description: "Field to show the number of people the portion serves."
+          example: 2
         unit:
           type: "string"
           description: "Measure Unit of the Item"
-          example: "0"
+          example: "kg"
         ean:
           type: "string"
           description: "EAN (European Article Number)"
+          example: "7896005202074"
 
     NutritionalInfo:
       type: "object"
@@ -2724,7 +3006,8 @@ components:
               - "VEGETARIAN"
         isAlcoholic:
           type: "boolean"
-          description: "Indicates if an item is alcoholic"
+          description: "Indicates if an item is alcoholic."
+          example: false
 
     Menu:
       type: "object"
@@ -2736,7 +3019,7 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the menu."
-          example: "22815773000169-f627ccdc-6789-456f-a782-148538d5035b"
+          example: "f627ccdc-6789-456f-a782-148538d5035b"
         name:
           type: "string"
           description: "Menu name"
@@ -2766,8 +3049,8 @@ components:
             format: "UUID"
           example:
             [
-              "22815773000169-92fad022-2c28-4239-a026-989f5b555cb7",
-              "22815773000169-6bb71850-1d40-49f9-8046-b13e068c0cca",
+              "92fad022-2c28-4239-a026-989f5b555cb7",
+              "6bb71850-1d40-49f9-8046-b13e068c0cca",
             ]
 
     Category:
@@ -2779,7 +3062,6 @@ components:
           "index",
           "name",
           "description",
-          "image",
           "externalCode",
           "status",
           "availabilityId",
@@ -2789,9 +3071,9 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the category."
-          example: "22815773000169-92fad022-2c28-4239-a026-989f5b555cb7"
+          example: "92fad022-2c28-4239-a026-989f5b555cb7"
         index:
-          type: "string"
+          type: "integer"
           description: "Category display index."
           example: 0
         name:
@@ -2825,14 +3107,14 @@ components:
           items:
             allOf:
               - $ref: "#/components/schemas/Availability/properties/id"
-          example: ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"]
+          example: ["11d063c4-73a7-4f87-a0eb-71636cc02029"]
         itemOfferId:
           type: array
           description: "A list of the id values of the child `ItemOffer` entities that correspond to this `Category` entity. Default assumes all `ItemOffer` entities are available in this category."
           items:
             allOf:
               - $ref: "#/components/schemas/ItemOffer/properties/id"
-          example: ["22815773000169-f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"]
+          example: ["f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"]
 
     ItemOffer:
       type: "object"
@@ -2843,11 +3125,11 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the item offer."
-          example: "22815773000169-f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"
+          example: "f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"
         itemId:
           type: "string"
           description: "The id value of the `Item` entity correlated to this `ItemOffer` entity."
-          example: "22815773000169-732bd31e-77fc-47ee-88ee-a0437f97b198"
+          example: "732bd31e-77fc-47ee-88ee-a0437f97b198"
         index:
           type: integer
           description: "ItemOffer display index."
@@ -2864,14 +3146,14 @@ components:
           items:
             allOf:
               - $ref: "#/components/schemas/Availability/properties/id"
-          example: ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"]
+          example: ["11d063c4-73a7-4f87-a0eb-71636cc02029"]
         optionGroupsId:
           type: "array"
           description: "A list of the id values of the child `OptionGroup` entities that correspond to this `ItemOffer` entity."
           items:
             allOf:
               - $ref: "#/components/schemas/OptionGroup/properties/id"
-          example: ["22815773000169-fe67e551-f42f-499a-8afb-0ed893c71fa3"]
+          example: ["fe67e551-f42f-499a-8afb-0ed893c71fa3"]
 
     OptionGroup:
       type: "object"
@@ -2892,7 +3174,7 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the option group."
-          example: "22815773000169-fe67e551-f42f-499a-8afb-0ed893c71fa3"
+          example: "fe67e551-f42f-499a-8afb-0ed893c71fa3"
         index:
           type: integer
           description: "Option Group display index."
@@ -2943,11 +3225,11 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the option."
-          example: "22815773000169-e5232f14-430c-4a94-8ff6-289d5a16a87a"
+          example: "e5232f14-430c-4a94-8ff6-289d5a16a87a"
         itemId:
           type: "string"
           description: "The id value of the `Item` entity correlated to this `Option` entity."
-          example: "22815773000169-502ecf11-0509-48ed-b63c-6211c48fd9b9"
+          example: "502ecf11-0509-48ed-b63c-6211c48fd9b9"
         index:
           type: integer
           description: "Option display index"
@@ -2971,7 +3253,7 @@ components:
           type: "string"
           format: "UUID"
           description: "A unique identifier of the availability."
-          example: "22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"
+          example: "11d063c4-73a7-4f87-a0eb-71636cc02029"
         startDate:
           type: "string"
           description: "Availability start date. If not informed, the availabilty is already avaliable."
@@ -2995,12 +3277,13 @@ components:
         lastRead:
           type: "string"
           format: "date-time"
-          description: "Date of last attempt to read merchant information"
+          description: "Date of last attempt to read merchant information. \n\n(UTC date-time in ISO timestamp format)."
         status:
           type: "string"
           description: "Reading attempt status"
           enum:
             - SUCCESS
+            - PROCESSING
             - FAIL
         moreInfo:
           type: "string"
@@ -3015,11 +3298,15 @@ components:
           SERVICE: "#/components/schemas/ServiceUpdate"
           MENU: "#/components/schemas/MenuUpdate"
           CATEGORY: "#/components/schemas/CategoryUpdate"
+          ITEM: "#/components/schemas/ItemUpdate"
           ITEM_OFFER: "#/components/schemas/ItemOfferUpdate"
           OPTION_GROUP: "#/components/schemas/OptionGroupUpdate"
           OPTION: "#/components/schemas/OptionUpdate"
           AVAILABILITY: "#/components/schemas/AvailabilityUpdate"
       properties:
+        merchantStatus:
+          allOf:
+          - $ref: "#/components/schemas/Merchant/properties/status"  
         entityType:
           type: "string"
           description: "The entity type of the updated object."
@@ -3044,77 +3331,89 @@ components:
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `Menu` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/Menu"
 
     CategoryUpdate:
-      description: Updated Category Object
+      description: Updated `Category` Object
       allOf:
         - $ref: "#/components/schemas/MerchantUpdate"
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `Category` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/Category"
 
-    ItemOfferUpdate:
-      description: Updated ItemOffer Object
+    ItemUpdate:
+      description: Updated `Item` Object
       allOf:
         - $ref: "#/components/schemas/MerchantUpdate"
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `Item` entity objects"
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Item"                
+
+    ItemOfferUpdate:
+      description: Updated `ItemOffer` Object
+      allOf:
+        - $ref: "#/components/schemas/MerchantUpdate"
+        - type: object
+          properties:
+            updatedObjects:
+              description: "Updated `ItemOffer` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/ItemOffer"
 
     OptionGroupUpdate:
-      description: Updated OptionGroup Object
+      description: Updated `OptionGroup` Object
       allOf:
         - $ref: "#/components/schemas/MerchantUpdate"
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `OptionGroup` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/OptionGroup"
 
     OptionUpdate:
-      description: Updated Option Object
+      description: Updated `Option` Object
       allOf:
         - $ref: "#/components/schemas/MerchantUpdate"
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `Option` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/Option"
 
     AvailabilityUpdate:
-      description: Updated Availability Object
+      description: Updated `Availability` Object
       allOf:
         - $ref: "#/components/schemas/MerchantUpdate"
         - type: object
           properties:
             updatedObjects:
-              description: "Updated `Service` entity objects"
+              description: "Updated `Availability` entity objects"
               type: array
               items:
                 allOf:
                   - $ref: "#/components/schemas/Availability"
-
 
 #Orders
 
@@ -3164,10 +3463,14 @@ components:
         displayId:
           type: "string"
           description: "Order Id shown in the **Ordering Application** interface for the costumer."
+        sourceAppId:
+          type: "string"
+          format: UUID
+          description: "This field must be filled in with the AppId of the **Ordering Application** that originated the order. This field is to help the applications that will work as a Hub, intermediating the requests from the **Ordering Application** with the **Software Service**."
         createdAt:
           type: "string"
           format: date-time
-          description: "Order creation date in ISO timestamp format."
+          description: "Order creation date and time. \n\n(UTC date-time in ISO timestamp format)."
         orderTiming:
           type: "string"
           description: "Order Timing. Currently, only `INSTANT` is accepted."
@@ -3175,7 +3478,9 @@ components:
             - "INSTANT"
         preparationStartDateTime:
           type: "string"
-          description: "Order preparation start time."
+          format: "date-time"
+          description: "Suggestion for the preparation start time after Order creation. This can be used by the **Ordering Application** to inform the merchant to delay the start of the preparation for any reason. Default is the same time as the order creation time.  
+                        \n\n(UTC date-time in ISO timestamp format)."
         merchant:
           type: "object"
           required: [id, "name"]
@@ -3206,9 +3511,9 @@ components:
               id:
                 type: "string"
                 format: "UUID"
-                description: "A unique identifier of the order."
+                description: "A unique identifier of the item."
               index:
-                type: "number"
+                type: "integer"
                 description: "Item's position."
               name:
                 type: "string"
@@ -3262,11 +3567,12 @@ components:
                     ]
                   properties:
                     index:
-                      type: "number"
+                      type: "integer"
                       description: "Option's position."
                     id:
                       type: "string"
                       format: "UUID"
+                      description: "A unique identifier of the item."
                     name:
                       type: "string"
                       description: "Options name"
@@ -3486,52 +3792,57 @@ components:
                 - "MARKETPLACE"
             deliveryAddress:
               type: "object"
+              description: "The address to which the order will be delivered."
               required:
                 [
                   "country",
-                  "streetName",
+                  "street",
                   "formattedAddress",
-                  "streetNumber",
+                  "number",
                   "city",
                   "postalCode",
                   "coordinates",
-                  "neighborhood",
+                  "district",
                   "state",
                 ]
               properties:
                 country:
                   type: "string"
                   pattern: "^[A-Z]{2}$"
-                  description: "Two-letter ISO 3166-1 alpha-2 country code."
+                  description: "Two-letter [ISO 3166-1 alpha-2](https://www.iso.org/standard/72482.html) country code."
                   example: "BR"
                 state:
                   type: "string"
-                  description: "State"
-                  example: "SP"
+                  description: "State or country subdivision. It is recommended (but not required) that you use the [ISO 3166-2](https://www.iso.org/standard/72483.html) representation. "
+                  example: "BR-SP"
                 city:
                   type: "string"
-                  description: "City"
+                  description: "City name."
                   example: "São Paulo"
-                neighborhood:
+                district:
                   type: "string"
-                  description: "Neighborhood / District"
+                  description: "Neighborhood or District."
                   example: "Moema"
-                streetName:
+                street:
                   type: "string"
-                  description: "Street"
+                  description: "Street name."
                   example: "Plaza Avenue"
-                streetNumber:
+                number:
                   type: "string"
-                  description: "Number"
+                  description: "Street number."
                   example: "100"
                 complement:
                   type: "string"
-                  description: "Complement"
-                  example: "2001"
+                  description: "Address complement."
+                  example: "BL 02 AP 31"
+                reference:
+                  type: "string"
+                  description: "Address reference." 
+                  example: "Yellow House"
                 formattedAddress:
                   type: "string"
                   description: "Full Formated Address Text"
-                  example: "Plaza Avenue, 100, Moema - São Paulo, SP - Brazil"
+                  example: "Plaza Avenue, 100, BL 02 AP 31, Moema - São Paulo, SP - Brazil"
                 postalCode:
                   type: "string"
                   description: "Postal Code"
@@ -3542,20 +3853,20 @@ components:
                   properties:
                     latitude:
                       type: "number"
-                      description: "Latitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be at least 5 decimal places."
-                      example: -23.548
+                      description: "Latitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+                      example: -23.54823
                     longitude:
                       type: "number"
-                      description: "Longitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be at least 5 decimal places."
-                      example: -46.6363
+                      description: "Longitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+                      example: -46.63632
             estimatedDeliveryDateTime:
               type: "string"
               format: date-time
-              description: "Estimated delivery date and time. The same date showed to the costumer, in the ordering application interface."
+              description: "Estimated delivery date and time. The same date showed to the costumer, in the **Ordering Application** interface. \n\n(UTC date-time in ISO timestamp format)."
             deliveryDateTime:
               type: "string"
               format: date-time
-              description: "Delivery date. The date time that the delivery actually took place."
+              description: "Delivery date. The date time that the delivery actually took place. \n\n(UTC date-time in ISO timestamp format)."
         takeout:
           type: "object"
           description: "If the chosen `type` is `TAKEOUT`, `DELIVERY` is not required."
@@ -3569,7 +3880,7 @@ components:
             takeoutDateTime:
               type: "string"
               format: date-time
-              description: "Takeout date in ISO timestamp format."
+              description: "Takeout date and time. It can be calculated by the **Ordering Application** using the average preparation time of the dishes. Default is the same time as order creation time. \n\n(UTC date-time in ISO timestamp format)."
         extraInfo:
           type: "string"
           description: "Extra information, if necessary."
@@ -3585,7 +3896,7 @@ components:
         createdAt:
           type: "string"
           format: date-time
-          description: "Order creation date in ISO timestamp format."
+          description: "Order creation date and time. \n\n(UTC date-time in ISO timestamp format)."
         orderExternalCode:
           type: "string"
           description: "External order code, which can be used by merchant or marketplace."
@@ -3689,7 +4000,11 @@ components:
         createdAt:
           type: "string"
           format: date-time
-          description: "Order creation date in ISO timestamp format."
+          description: "Order creation date and time. \n\n(UTC date-time in ISO timestamp format)."
+        sourceAppId:
+          type: "string"
+          format: UUID
+          description: "This field must be filled in with the AppId of the **Ordering Application** that originated the order. This field is to help the applications that will work as a Hub, intermediating the requests from the **Ordering Application** with the **Software Service**."
 
     EventMetadataCancel:
       description: Metadata
@@ -3746,20 +4061,1206 @@ components:
             metadata:
               type: object
               description: "Information related to the Event Type"
-              required: ["expectedPreparationStartTime", "clientId"]
               properties:
                 # expectedPreparationStartTime: Removed field. See Issue (https://github.com/Abrasel-Nacional/Open-Delivery-Beta-Test/issues/7)
                 #   type: "string"
                 #   format: "date-time"
-                #   description: "Expected preparation start time after Order Confirmation. This can be used by the Ordering Application to inform the merchant to delay the start of the preparation for any reason."
+                #   description: "Expected preparation start time after Order Confirmation. This can be used by the **Ordering Application** to inform the merchant to delay the start of the preparation for any reason."
                 clientId:
                   type: "string"
                   description: "The ID of the client system that generated the action that resulted in this event (to be used with application with multiple stations)"
 
-#Sales Report
-    SalesByMerchant:
+
+#Common
+   
+    Address:
+      type: "object"
+      title: "Address"
+      required:
+        [
+          "country",
+          "state",
+          "city",
+          "district",
+          "street",
+          "number",
+          "postalCode",
+          "complement",
+          "latitude",
+          "longitude",
+        ]
+      properties:
+        "country":
+          type: "string"
+          pattern: "^[A-Z]{2}$"
+          description: "Two-letter [ISO 3166-1 alpha-2](https://www.iso.org/standard/72482.html) country code."
+          example: "BR"
+        state:
+          type: "string"
+          description: "State or country subdivision. It is recommended (but not required) that you use the [ISO 3166-2](https://www.iso.org/standard/72483.html) representation. "
+          example: "BR-SP"
+        "city":
+          type: "string"
+          description: "City name."
+          example: "São Paulo"
+        "district":
+          type: "string"
+          description: "District or Neighborhood name."
+          example: "Moema"
+        "street":
+          type: "string"
+          description: "Street Name."
+          example: "Plaza Avenue"
+        "number":
+          type: "string"
+          description: "Street Number."
+          example: "100"
+        "postalCode":
+          type: "string"
+          description: "Postal Code"
+          example: "20111-000"
+        "complement":
+          type: "string"
+          description: "Address complement."
+          example: "BL 02 AP 31"
+        "reference":
+          type: "string"
+          description: "Address reference." 
+          example: "Yellow House"  
+        "latitude":
+          type: "number"
+          description: "Latitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -23.54809
+        "longitude":
+          type: "number"
+          description: "Longitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -46.63638
+
+    AddressLogistics:
+      type: "object"
+      title: "Address"
+      required:
+        [
+          "country",
+          "state",
+          "city",
+          "district",
+          "street",
+          "number",
+          "postalCode",
+          "complement",
+        ]
+      properties:
+        "country":
+          type: "string"
+          pattern: "^[A-Z]{2}$"
+          description: "Two-letter [ISO 3166-1 alpha-2](https://www.iso.org/standard/72482.html) country code."
+          example: "BR"
+        state:
+          type: "string"
+          description: "State or country subdivision. It is recommended (but not required) that you use the [ISO 3166-2](https://www.iso.org/standard/72483.html) representation. "
+          example: "BR-SP"
+        "city":
+          type: "string"
+          description: "City name."
+          example: "São Paulo"
+        "district":
+          type: "string"
+          description: "District or Neighborhood name."
+          example: "Moema"
+        "street":
+          type: "string"
+          description: "Street Name."
+          example: "Plaza Avenue"
+        "number":
+          type: "string"
+          description: "Street Number."
+          example: "100"
+        "postalCode":
+          type: "string"
+          description: "Postal Code"
+          example: "20111-000"
+        "complement":
+          type: "string"
+          description: "Address complement."
+          example: "BL 02 AP 31"
+        "reference":
+          type: "string"
+          description: "Address reference." 
+          example: "Yellow House"  
+        "latitude":
+          type: "number"
+          description: "Latitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -23.54809
+        "longitude":
+          type: "number"
+          description: "Longitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -46.63638
+
+    ContactPhones:
+      type: "object"
+      title: "Contact Phones"
+      required: ["commercialNumber"]
+      properties:
+        "commercialNumber":
+          type: "string"
+          description: "Telephone number of the merchant"
+          example: "11999999999"
+        "whatsappNumber":
+          type: "string"
+          description: "Whatsapp number of the merchant"
+          example: "11998888888"
+
+    Price:
+      type: "object"
+      title: "Price"
+      required: ["value", "currency"]
+      properties:
+        value:
+          type: "number"
+          format: "decimal"
+          description: "Price value. 4 decimals places are accepted"
+          example: 40
+        currency:
+          type: "string"
+          pattern: "^[A-Z]{3}$"
+          description: "The 3-letter ISO 4217 currency code."
+          example: "BRL"
+
+    Repository:
+      type: "object"
+      title: "Repository"
+      required:
+        [
+          "document",
+          "corporateName",
+          "postalCode",
+          "email",
+          "website",
+          "baseApiUrl",
+          "TTL",
+          "hostCompanyDocument",
+        ]
+      properties:
+        document:
+          type: "string"
+          description: "Company registration document"
+          pattern: "/^\\d{14}$/"
+        corporateName:
+          type: "string"
+          description: "Corporate Name"
+          maxLength: 500
+        postalCode:
+          type: "string"
+          description: "Postal Code"
+        email:
+          type: "string"
+          description: "Contact Email. It is recommended that a contact be made available to deal with specific **Open Delivery** issues."
+        website:
+          type: "string"
+          format: "URL"
+          description: "Company Website. It is recommended to have a website (or landing page) with information about how the company works with Open Delivery."
+        baseApiUrl:
+          type: "string"
+          format: "URL"
+          description: "Base URL of the endpoints with the company's data. It will be used by the indexing system to search the establishments under the responsibility of the menu software (see endpoint) and to search public menus (see endpoint)."
+        hostCompanyDocument:
+          type: "string"
+          description: "**Software Service** registration document that provides the merchant information."
+          pattern: "/^\\d{14}$/"
+        TTL:
+          type: "integer"
+          description: "Time to Live (in seconds).
+            \nA new request must be done when the TTL expires."
+
+    Error:
+      type: object
+      required: ["title", "status"]
+      properties:
+        title:
+          type: string
+          description: "Short description of the problem."
+          example: "Unexpected error"
+        status:
+          type: integer
+          description: "HTTP code of the returned status."
+          example: 500
+
+    Image:
+      description: Image Object
+      type: object
+      required: ["URL", "CRC"]
+      properties:
+        URL:
+          type: "string"
+          format: "uri"
+          description:
+            "URL pointing to an image of the merchant logo.\n\n Image requirements:
+            \n - Hosted on a secure connection (SSL).
+            \n - File size must be less than 10MB.
+            \n - Image must be in JPEG, PNG or GIF format.
+            \n - Both width and height must be between 320px and 1144px."
+          example: "https://food-company.com/image.jpg"
+        CRC-32:
+          type: string
+          format: "CRC32"
+          description: "CRC-32 of the image file. This field can be used to check for changes in the image file."
+          example: "96b41025"
+
+#Logistic
+
+    DeliveryOrder:
+      description: Delivery Order Object.
+      type: object
+      required: [orderId, orderDisplayId, merchant, pickupAddress, returnToMerchant, canCombine, deliveryAddress, customerName, vehicle, limitTimes, totalOrderPrice, totalWeight, payments]
+      properties:
+        orderId:
+          type: string
+          format: "UUID"
+          description: "The orderId generated by the **`Ordering Application`**."
+        orderDisplayId:
+          type: string
+          description: "Order Id shown in the **`Ordering Application`** interface for the costumer."
+          example: "96b41025"
+        merchant:
+          type: "object"
+          required: [id, "name"]
+          description: "Merchant information."
+          properties:
+            id:
+              allOf:
+                - $ref: "#/components/schemas/Merchant/properties/id"
+            name:
+              allOf:
+                - $ref: "#/components/schemas/BasicInfo/properties/name"
+        pickupAddress:
+          description: "Pickup Address."
+          allOf:
+            - $ref: "#/components/schemas/AddressLogistics"
+            - type: object
+              properties:
+                pickupLocation:
+                  type: string
+                  description: "Pickup Location"
+                parkingSpace:
+                  type: boolean
+                  description: "Parking Space"
+                instructions:
+                  type: string
+                  description: "Any instructions that may help the delivery."
+        returnToMerchant:
+          type: boolean
+          description: "Inform whether the delivery man should return to the pickup address after the delivery has been made."
+        canCombine:
+          type: boolean
+          description: "Inform whether the **`Logistic Service`** can combine this order with other orders in the same delivery."
+        deliveryAddress:
+          description: "Delivery Address"
+          allOf:
+            - $ref: "#/components/schemas/AddressLogistics"
+            - type: object
+              properties:
+                instructions:
+                  type: string
+                  description: "Instructions"
+        customerName:
+          type: "string"
+          description: "Customer Name."
+        vehicle:
+          description: "Vehicle Info. informs which vehicle options are to be used for delivery. More than one can be informed, but the logistics service must choose only one of the types of vehicles informed."
+          allOf:
+            - $ref: "#/components/schemas/Vehicle"
+        limitTimes:
+          type: object
+          description: "Limit Times. Informs the maximum pickup and delivery times that must be met by the `Logistics Service`."
+          properties:
+            pickupLimit:
+              type: integer
+              description: "Pickup Limit in **minutes**. It should be used to inform the maximum amount of minutes from the time the request was made to which the order should be collected at the merchant."
+              example: 23
+            deliveryLimit:
+              type: integer
+              description: "Delivery Limit in **minutes**. It should be used to inform the maximum amount of minutes from the time the request was made to which the order should be delivered at the consumer's address."
+              example: 48
+            orderCreatedAt:
+              type: string
+              format: date-time
+              description: "The date and time that the Order was created at the **Ordering Application**. \n\n(UTC date-time in ISO timestamp format)." 
+        totalOrderPrice:
+          description: "Total order price that was calculated and displayed for the final consumer in the **`Ordering Application`**. This value may already contain taxes and shipping in addition to the value of the items purchased."
+          allOf:
+            - $ref: "#/components/schemas/Price"
+        totalWeight:
+          type: integer
+          description: "Total packaging weight in **grams**"
+        packageVolume:
+          type: number
+          description: "The cubage of the packaging in **cubic meters (m³)**."
+        packageQuantity:
+          type: integer
+          description: |-
+            Number of packages that will be transported in this order. For example: 1 bag, 2 packages or 3 boxes. 
+            > The unit of measure will not be considered, only the quantity.
+        specialInstructions:
+          type: string
+          description: "Free text to describe special instructions that may apply. These instructions can be used to give some special guidance to the delivery person at the time of the pickup or delivery."
+        additionalPricePercentual:
+          type: integer
+          description: |-
+              Indicates to the **`Logistic Service`** an additional percentage to the list price that the requester agrees to pay for the delivery.
+              > The delivery request will be refused if the delivery price exceeds this value.
+
+              Example: List Price = $10  
+                       Actual calculated price = $15  
+                       Additonal price percentage = **50**
+
+
+              In this case, any value informed below 50, would result in the order being rejected.
+        payments:
+          type: object
+          description: "Payments Info. It informs the payment methods chosen by the consumer in the **`Ordering Application`**. This section should be used by the `Logistics Service` to check how much the delivery man should receive from the consumer when delivering the order."
+          properties:
+            method:
+              type: string
+              description: |-
+                OFFLINE - The order will be paid by the consumer at the time the order is received.  
+                ONLINE - The order has already been paid through the order application.
+              enum:
+                - OFFLINE
+                - ONLINE
+            wirelessPos:
+              type: boolean
+              description: "Indicates whether the delivery man should take the wireless payment device with him."  
+            offlineMethod:
+              type: array
+              description: "If the method is `OFFLINE`, the payment information should be provided."
+              items:
+                type: object
+                description: ""
+                properties:
+                  type:
+                    type: "string"
+                    enum:
+                      - "CREDIT"
+                      - "DEBIT"
+                      - "MEAL_VOUCHER"
+                      - "FOOD_VOUCHER"
+                      - "PIX"
+                      - "CASH"
+                      - "CREDIT_DEBIT"
+                      - "OTHER"
+                  amount:
+                    allOf:
+                      - $ref: "#/components/schemas/Price"
+            change:
+              description: If type is `CASH`, tells how much change will be needed.
+              allOf:
+                - $ref: "#/components/schemas/Price"
+
+    Vehicle:
+      description: Vehicle Object.
+      type: object
+      required: [type, container]
+      properties:
+        type:
+          type: "array"
+          description: "Vehicle Type"
+          items:
+            type: string
+            enum:
+              - "MOTORBIKE_BAG"
+              - "MOTORBIKE_BOX"
+              - "CAR"
+              - "BYCICLE"
+              - "SCOOTER"
+              - "VUC"
+        container:
+          type: "string"
+          description: "Vehicle container (bag) type."
+          enum:
+            - "NORMAL"
+            - "THERMIC"
+        containerSize:
+          type: string
+          description: "Vehicle container (bag) size."   
+          enum:
+            - "SMALL"
+            - "MEDIUM"
+            - "LARGE"
+            - "EXTRA LARGE"           
+        instruction:
+          type: "string"
+          description: "Free text to describe special instructions that may apply. These instructions can be used to give some special guidance to the delivery person at the time of the pickup or delivery."
+
+    DeliveryOrderResponse:
+      description: Delivery Order Response Object.
+      type: object
+      required: [deliveryId, event, completion]
+      properties:
+        deliveryId:
+          type: "string"
+          format: "UUID"
+          description: "The delivery Id generated by the **`Logistic Service`**."
+        event:
+          description: "Current event of the order. It is expected to be sent with the value **`PENDING`** at this moment, since the acceptance or rejection of the request will be processed asynchronously."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryEvent/properties/type"
+        completion:
+          type: "object"
+          description: "Informs the expected date and time for sending the acceptance or refusal of the delivery order."
+          properties:
+            estimate:
+              type: string
+              format: date-time
+              description: "Expected date and time for completion. \n\n(UTC date-time in ISO timestamp format)."
+            rejectAfter:
+              type: string
+              format: date-time
+              description: "Maximum date and time to wait for the acceptance or refusal of the order. After this time the delivery request should be disregarded and a new request should be made. \n\n(UTC date-time in ISO timestamp format)."  
+        deliveryDetailsURL:
+          type: "string"
+          format: "URI"
+          description: |- 
+            It is the URL where the delivery information can be found. 
+            It should return the [GET /logistics/delivery/{orderId}](#operation/logisticDetails) route for this order."
+
+    DeliveryOrderEvent:
+      description: Delivery Order Event Object.
+      type: object
+      required: [deliveryId, orderId, orderDisplayId, merchant, event, customerName, vehicle, deliveryPrice, eta, deliveryMan]
+      properties:
+        deliveryId:
+          type: "string"
+          format: "UUID"
+          description: "The delivery ID generated by the `Logistics Service`."
+        orderId:
+          type: "string"
+          format: "UUID"
+          description: "The orderId generated by the **`Ordering Application`**."
+        orderDisplayId:
+          type: string
+          description: "Order Id shown in the **`Ordering Application`** interface for the costumer."
+          example: "96b41025"
+        merchant:
+          type: "object"
+          required: [id, "name"]
+          description: "Merchant information."
+          properties:
+            id:
+              allOf:
+                - $ref: "#/components/schemas/Merchant/properties/id"
+            name:
+              allOf:
+                - $ref: "#/components/schemas/BasicInfo/properties/name"  
+        event:
+          description: "Current Event Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryEvent"
+        problem:
+          type: array
+          description: "List of problems that may occur."
+          items:
+            allOf:
+              - $ref: "#/components/schemas/DeliveryProblem"
+        customerName:
+          type: "string"
+          description: "Customer Name."
+        vehicle:
+          description: "Chosen Vehicle Info."
+          allOf:
+            - $ref: "#/components/schemas/ChosenVehicle"
+        deliveryPrice:
+          description: "Delivery Pricing Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryPrice"
+        eta:
+          description: "ETA Times."
+          allOf:
+            - $ref: "#/components/schemas/ETA"
+        deliveryMan:
+          description: "Delivery Man Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryMan"
+        geoLocalization:
+          description: "Geo Localization."
+          allOf:
+            - $ref: "#/components/schemas/GeoLocalization"
+        externalTrackingURL:
+          type: string
+          format: "URI"
+          description: "External URL, provided by the logistics service to track the delivery on a specific page. Example: Real-time map view, or delivery timeline."   
+        combinedOrdersIds:
+          type: "array"
+          description: "Combined Orders Ids. Informs which other orders from the same merchant are being carried by the same delivery man, with the same `deliveryId`."
+          items:
+            type: string
+            format: UUID
+            
+    DeliveryEvent:
+      description: Delivery Event Object.
+      type: object
+      required: [type, datetime]
+      properties:
+        type:
+          type: string
+          description: "The current delivery event."
+          enum:
+            - PENDING
+            - ACCEPTED
+            - REJECTED
+            - PICKUP_ONGOING
+            - ARRIVED_AT_MERCHANT
+            - ORDER_PICKED
+            - DELIVERY_ONGOING
+            - ARRIVED_AT_COSTUMER
+            - ORDER_DELIVERED
+            - RETURNING_TO MERCHANT
+            - RETURNED_TO_MERCHANT
+            - DELIVERY_FINISHED
+            - CANCELLED
+        message:
+          type: string
+          description: "Free message. It should be used to provide more detailed information."
+        datetime:
+          type: string
+          format: date-time
+          description: "Date and time when the event ocurred. \n\n(UTC date-time in ISO timestamp format)."
+        rejectionInfo:
+          description: "Rejection Info. It should be informed to provide more information when the event type is `REJECTED`."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryEventDenied"
+
+    DeliveryEventDenied:
+      description: Delivery Event Denied Object.
+      type: object
+      required: [reason]
+      discriminator:
+        propertyName: reason
+        mapping:
+          PRICE_EXCEEDED: "#/components/schemas/DeliveryEventDeniedPrice"
+          VEHICLE_NOT_AVAILABLE: "#/components/schemas/DeliveryEventDeniedVehicle"
+          NO_DELIVERYMAN_AVAILABLE: "#/components/schemas/DeliveryEventDeniedNoDeliveryMan"
+          DOES_NOT_MEET_REQUESTED_TIMES: "#/components/schemas/DeliveryEventDeniedEta"
+          REGION_NOT_SERVED: "#/components/schemas/DeliveryEventDenied"
+          INVALID_ADDRESS: "#/components/schemas/DeliveryEventDenied"
+          OTHER: "#/components/schemas/DeliveryEventDenied"
+      properties:
+        reason:
+          type: string
+          description: Rejection reason.
+          enum:
+            - "PRICE_EXCEEDED"
+            - "VEHICLE_NOT_AVAILABLE"
+            - "NO_DELIVERYMAN_AVAILABLE"
+            - "DOES_NOT_MEET_REQUESTED_TIMES"
+            - "REGION_NOT_SERVED"
+            - "OTHER"
+
+    DeliveryEventDeniedVehicle:
+      description: Metadata
+      allOf:
+        - $ref: "#/components/schemas/DeliveryEventDenied"
+        - type: object
+        - properties:
+            metadata:
+              type: object
+              description: "Information about vehicles availability at the moment."
+              properties:
+                availableVehicles:
+                  type: integer
+                  description: "Informs how many vehicles are available at the moment."
+                vehiclesAvailable:
+                  description: "List of currently available vehicles."
+                  allOf:
+                    - $ref: "#/components/schemas/Vehicle"
+                nextAvailableVehicle:
+                  type: integer
+                  description: "Informs how soon the next vehicle will be available in **minutes**." 
+
+    DeliveryEventDeniedPrice:
+      description: Metadata
+      allOf:
+        - $ref: "#/components/schemas/DeliveryEventDenied"
+        - type: object
+        - properties:
+            metadata:
+              type: object
+              description: "The actual delivery price calculated according to the data given in the request."
+              allOf:
+                - $ref: "#/components/schemas/DeliveryPrice"
+
+    DeliveryEventDeniedNoDeliveryMan:
+      description: Metadata
+      allOf:
+        - $ref: "#/components/schemas/DeliveryEventDenied"
+        - type: object
+        - properties:
+            metadata:
+              type: object
+              description: "Information about delivery man availability."
+              properties:
+                nextAvailableVehicle:
+                  type: integer
+                  description: "Informs how soon the next delivery man will be available in **minutes**."
+
+    DeliveryEventDeniedEta:
+      description: Metadata
+      allOf:
+        - $ref: "#/components/schemas/DeliveryEventDenied"
+        - type: object
+        - properties:
+            metadata:
+              type: object
+              description: "The actual ETAs calculated according to the data given in the request."
+              allOf:
+                - $ref: "#/components/schemas/ETA"
+
+    DeliveryProblem:
+      description: Delivery Problem Object.
+      type: object
+      required: [reason, datetime, canFinishDeliver, needMerchantAction]
+      properties:
+        reason:
+          type: string
+          description: "Problem reason."
+          enum:
+          - DELIVERY_MAN_OCCURRENCE
+          - PAYMENT_PROBLEMS
+          - WRONG_PRODUCT_OR_ITEM
+          - ORDER_DELAYED
+          - ORDER_DAMAGED_OR_VIOLATED
+          - CUSTOMER_DID_NOT_PLACE_ORDER
+          - CUSTOMER_ADDRESS_UNKNOWN
+          - ORDER_MISSING_ITEMS
+          - NOBODY_TO_RECEIVE
+          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
+          - ORDER_DELIVERED_WITHOUT_PAYMENT
+          - FRAUD_OR_THEFT
+          - OTHER
+        message:
+          type: string
+          description: "Free message. It should be used to provide more detailed information."
+        datetime:
+          type: string
+          format: date-time
+          description: "Date and time when the problem ocurred. \n\n(UTC date-time in ISO timestamp format)."
+        canFinishDeliver:
+          type: boolean
+          description: "Informs whether or not it is still possible to finish the delivery."
+        needMerchantAction:
+          type: boolean
+          description: "Informs whether or not the merchant needs to perform some action in order for delivery to continue."
+
+    DeliveryProblemHistory:
+      description: Delivery Event.
+      type: object
+      required: [reason, datetime, resolved]
+      properties:
+        reason:
+          type: string
+          description: "Problem reason."
+          enum:
+          - DELIVERY_MAN_OCCURRENCE
+          - PAYMENT_PROBLEMS
+          - WRONG_PRODUCT_OR_ITEM
+          - ORDER_DELAYED
+          - ORDER_DAMAGED_OR_VIOLATED
+          - CUSTOMER_DID_NOT_PLACE_ORDER
+          - CUSTOMER_ADDRESS_UNKNOWN
+          - ORDER_MISSING_ITEMS
+          - NOBODY_TO_RECEIVE
+          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
+          - ORDER_DELIVERED_WITHOUT_PAYMENT
+          - FRAUD_OR_THEFT
+          - OTHER
+        message:
+          type: string
+          description: "Free message. It should be used to provide more detailed information."
+        datetime:
+          type: string
+          format: date-time
+          description: "Date and time when the problem ocurred. \n\n(UTC date-time in ISO timestamp format)."
+        resolved:
+          type: boolean
+          description: "Informs if the problem was resolved or not."
+        actionTaken:
+          type: boolean
+          description: "Action taken by the requester."
+          enum:
+            - RETURN_TO_STORE
+            - DELIVER_PRODUCT
+            - CANCEL_DELIVERY 
+        resolutionDate:
+          type: string
+          format: date-time
+          description: "Date and time when the problem was resolved. \n\n(UTC date-time in ISO timestamp format)."  
+
+    ChosenVehicle:
+      description: Delivery Order Response Object
+      type: object
+      required: [type, container]
+      properties:
+        type:
+          type: string
+          description: "Vehicle Type."
+          enum:
+            - "MOTORBIKE_BAG"
+            - "MOTORBIKE_BOX"
+            - "CAR"
+            - "BYCICLE"
+            - "SCOOTER"
+            - "VUC"
+        container:
+          type: "string"
+          description: "The veichle container (bag) type."
+          enum:
+            - "NORMAL"
+            - "THERMIC"
+        instruction:
+          type: "string"
+          description: "Special Instructions."
+
+    DeliveryPrice:
+      description: Delivery Pricing
+      type: object
+      required: [price, pricingList, additionalPricePercentual]
+      properties:
+        price:
+          description: "The calculated price of the delivery. It may be 0. The price shall be calculated according to the Price List being used, as well as previously established commercial agreements."
+          allOf:
+            - $ref: "#/components/schemas/Price"
+        pricingList:
+          type: string
+          description: "Indicates what list was used to calculate the delivery price."
+          enum:
+            - "NORMAL"
+            - "DINAMIC"
+        additionalPricePercentual:
+          type: integer
+          description: |-
+              Indicates the additional percentage to the list price that was calculated for this delivery.
+
+              Example: List Price = $10  
+                       Actual calculated price = $15  
+                       Additonal price percentage = **50**
+
+    DeliveryAvailabilityPrice:
+      description: Delivery Order Object
+      type: object
+      required: [pickupAddress, returnToMerchant, canCombine, deliveryAddress, vehicle, limitTimes, totalOrderPrice, totalWeight]
+      properties:
+        merchant:
+          type: "object"
+          required: [id, "name"]
+          description: "Merchant information."
+          properties:
+            id:
+              allOf:
+                - $ref: "#/components/schemas/Merchant/properties/id"
+            name:
+              allOf:
+                - $ref: "#/components/schemas/BasicInfo/properties/name"
+        pickupAddress:
+          description: "Pickup Address."
+          allOf:
+            - $ref: "#/components/schemas/AddressLogistics"
+            - type: object
+              properties:
+                pickupLocation:
+                  type: string
+                  description: "Pickup Location"
+                parkingSpace:
+                  type: boolean
+                  description: "Parking Space"
+                instructions:
+                  type: string
+                  description: "Instructions"
+        returnToMerchant:
+          type: boolean
+          description: "Inform whether the delivery man should return to the pickup address after the delivery has been made."
+        canCombine:
+          type: boolean
+          description: "Inform whether the **`Logistic Service`** can combine this order with other orders in the same delivery."
+        deliveryAddress:
+          description: "Delivery Address"
+          allOf:
+            - $ref: "#/components/schemas/AddressLogistics"
+            - type: object
+              properties:
+                instructions:
+                  type: string
+                  description: "Instructions"
+        vehicle:
+          description: "Vehicle Info. informs which vehicle options are to be used for delivery. More than one can be informed, but the logistics service must choose only one of the types of vehicles informed."
+          allOf:
+            - $ref: "#/components/schemas/Vehicle"
+        limitTimes:
+          type: object
+          description: "Limit Times. Informs the maximum pickup and delivery times that must be met by the `Logistics Service`."
+          properties:
+            pickupLimit:
+              type: integer
+              description: "Pickup Limit in **minutes**. It should be used to inform the maximum amount of minutes from the time the request was made to which the order should be collected at the merchant."
+              example: 23
+            deliveryLimit:
+              type: integer
+              description: "Delivery Limit in **minutes**. It should be used to inform the maximum amount of minutes from the time the request was made to which the order should be delivered at the consumer's address."
+              example: 48
+            orderCreatedAt:
+              type: string
+              format: date-time
+              description: "The date and time that the Order was created at the **Ordering Application**. \n\n(UTC date-time in ISO timestamp format)." 
+        totalOrderPrice:
+          description: "Total order price that was calculated and displayed for the final consumer in the **`Ordering Application`**. This value may already contain taxes and shipping in addition to the value of the items purchased."
+          allOf:
+            - $ref: "#/components/schemas/Price"
+        totalWeight:
+          type: integer
+          description: "Total Weight in **grams**"
+        volumes:
+          type: integer
+          description: |-
+            Number of volumes that will be transported in this order. For example, 2 packages, or 3 boxes. 
+            > The unit of measure will not be considered, only the quantity.
+        specialInstructions:
+          type: string
+          description: "Free text to describe special instructions that may apply."
+        additionalPricePercentual:
+          type: integer
+          description: |-
+              Indicates to the **`Logistic Service`** an additional percentage to the list price that the requester agrees to pay for the delivery.
+              > The delivery request will be refused if the delivery price exceeds this value.
+
+              Example: List Price = $10  
+                       Actual calculated price = $15  
+                       Additonal price percentage = **50**
+
+
+              In this case, any value informed below 50, would result in the order being rejected.
+        onlinePayment:
+          type: boolean
+          description: "Informs whether or not the payment has already been made in the **`Ordering Application`**"
+
+    DeliveryAvailabilityPriceResponse:
+      description: Delivery Order Response Object
+      type: object
+      properties:
+        deliveryPrice:
+          description: "Delivery Pricing Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryPrice"        
+        vehicles:
+          type: object
+          description: "Chosen Vehicle Info."
+          properties:
+            availableVehicles:
+              type: integer
+              description: "Informs how many vehicles are available at the moment."
+            vehiclesAvailable:
+              description: "List of currently available vehicles."  
+              allOf:
+                - $ref: "#/components/schemas/Vehicle"
+            nextAvailableVehicle:
+              type: integer
+              description: "Informs how soon the next vehicle will be available in **minutes**." 
+        ETAs:
+          description: "ETAs"
+          allOf:
+            - $ref: "#/components/schemas/ETA"
+   
+    ETA:
+      description: ETA
+      type: object
+      required: [pickupEtaMinutes, pickupEtaDatetime, deliveryEtainMinutes, deliveryEtaDatetime, maxDeliveryTime]
+      properties:
+        pickupEtaMinutes:
+          type: integer
+          description: "Pickup Eta in **minutes**. Informs how many minutes it will take the delivery man to arrive at the merchant for order pickup."
+        pickupEtaDatetime:
+          type: string
+          format: date-time
+          description: "Pickup Eta Datetime. Informs the date and time the delivery man is expected to arrive at the merchant for order pickup. \n\n(UTC date-time in ISO timestamp format)."
+        deliveryEtainMinutes:
+          type: integer
+          description: "Delivery Eta in **minutes**. Informs how many minutes it will take the delivery man to arrive at the consumer's address for order delivery."
+        deliveryEtaDatetime:
+          type: string
+          format: date-time
+          description: "Delivery Eta Datetime. Informs the date and time the delivery man is expected to arrive at the consumer's address for order delivery. \n\n(UTC date-time in ISO timestamp format)."
+        maxDeliveryTime:
+          type: string
+          format: date-time
+          description: "Maximum Date and Time for delivery. This time should not exceed the delivery time limit given in the order request. \n\n(UTC date-time in ISO timestamp format)."
+  
+          
+    DeliveryMan:
+      description: Delivery Man
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: "Delivery Man Id generated at the `Logistics Service`."
+        name:
+          type: string
+          description: "Delivery Man Name."
+        pictureURL:
+          type: string
+          format: "URI"
+          description: "URL to access the photo of the delivery man. Before entering this field, check that the parties allow data to be shared according to data disclosure laws and rules."
+        phone:
+          type: string
+          description: "Delivery Man Phone. Before entering this field, check that the parties allow data to be shared according to data disclosure laws and rules."
+
+    GeoLocalization:
+      description: Delivery Event
+      type: object
+      required: [latitude, longitude, distanceToPickup, distanceToDelivery, timestamp]
+      properties:
+        latitude:
+          type: "number"
+          description: "Indicates the latitude coordinate of the actual position of the delivery man.\n\n\n\nLatitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -23.54809
+        longitude:
+          type: "number"
+          description: "Indicates the longitude coordinate of the actual position of the delivery man.\n\n\n\nLongitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be **at least 5 decimal places (multipleOf: 0.00001)**."
+          example: -46.63638  
+        lastAddress:
+          description: The last known address that the delivery man was when the event was sent.
+          type: object
+          required: [id, orderId, orderDisplayId]
+          properties:
+            "country":
+              type: "string"
+              pattern: "^[A-Z]{2}$"
+              description: "Two-letter [ISO 3166-1 alpha-2](https://www.iso.org/standard/72482.html) country code."
+              example: "BR"
+            state:
+              type: "string"
+              description: "State or country subdivision. It is recommended (but not required) that you use the [ISO 3166-2](https://www.iso.org/standard/72483.html) representation. "
+              example: "BR-SP"
+            "city":
+              type: "string"
+              description: "City name."
+              example: "São Paulo"
+            "district":
+              type: "string"
+              description: "District or Neighborhood name."
+              example: "Moema"
+            "street":
+              type: "string"
+              description: "Street Name."
+              example: "Plaza Avenue"
+            "postalCode":
+              type: "string"
+              description: "Postal Code."
+              example: "20111-000"
+            distanceToPickup:
+              type: string
+              description: "Distance To Pickup in **meters**."
+            distanceToDelivery:
+              type: string
+              description: "Distance To Delivery in **meters**."
+            timestamp:
+              type: string
+              format: date-time
+              description: "Date and time when this information is valid. \n\n(UTC date-time in ISO timestamp format)."
+
+    DeliveryCancel:
+      description: Delivery Cancel
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          description: "Cancel Reason."
+          enum:
+            - CONSUMER_CANCELLATION_REQUESTED
+            - NO_SHOW 
+            - PROBLEM_AT_MERCHANT  
+            - HIGH_ACCEPTANCE_TIME
+            - INCORRECT_ORDER_OR_PRODUCT_PICKUP 
+            - PROBLEM_RESOLUTION
+            - DISCOMBINE_ORDER
+            - OTHER
+        action:
+          type: string
+          description: "Action to be taken by the delivery man, after the cancellation."
+          enum:
+            - RETURN_TO_STORE
+            - CANCEL_DELIVERY
+        message:
+          type: string
+          description: "Free message. It should be used to provide more detailed information." 
+          
+    DeliveryCancelResponse:
+      type: object
+      required: [additionalCharges]
+      properties:
+        additionalCharges:
+          type: boolean
+          description: "Informs whether or not the cancellation will cause an additional charge to the delivery."
+
+    DeliveryHandleProblem:
+      description: Delivery Cancel
+      type: object
+      required: [reason, action]
+      properties:
+        reason:
+          type: string
+          description: "Problem Reason."
+          enum:
+          - DELIVERY_MAN_OCCURRENCE
+          - PAYMENT_PROBLEMS
+          - WRONG_PRODUCT_OR_ITEM
+          - ORDER_DELAYED
+          - ORDER_DAMAGED_OR_VIOLATED
+          - CUSTOMER_DID_NOT_PLACE_ORDER
+          - CUSTOMER_ADDRESS_UNKNOWN
+          - ORDER_MISSING_ITEMS
+          - NOBODY_TO_RECEIVE
+          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
+          - ORDER_DELIVERED_WITHOUT_PAYMENT
+          - FRAUD_OR_THEFT
+          - OTHER
+        action:
+          type: string
+          description: "The action that the delivery man should take to solve this problem."
+          enum:
+          - RETURN_TO_STORE
+          - DELIVER_PRODUCT
+          - CANCEL_DELIVERY  
+        message:
+          type: string
+          description: "Free message. It should be used to provide more detailed information." 
+          
+    DeliveryOrderPicked:
+      type: "object"
+      title: "Order Picked"
+      properties:
+        pickupDate:
+          type: "string"
+          format: date-time
+          description: "Date and time when the order pickup occurred. \n\n(UTC date-time in ISO timestamp format)."
+        volumePicked:
+          type: "integer"
+          description: "Number of volumes picked up."
+        observation:
+          type: string
+          description: "Free text. It should be used to provide more detailed information."
+    
+    DeliveryOrderFinish:
+      type: "object"
+      title: "Order Picked"
+      required: ["finishDate"]
+      properties:
+        finishDate:
+          type: "string"
+          format: date-time
+          description: "Date and time when delivery completion occurred. \n\n(UTC date-time in ISO timestamp format)."
+        observation:
+          type: string
+          description: "Free text. It should be used to provide more detailed information."  
+
+          
+    DeliveryOrderDetails:
+      description: Delivery Order Details Object
+      type: object
+      required: [deliveryId, orderId, orderDisplayId, merchant, customerName, events, vehicle, deliveryPrice, times]
+      properties:
+        deliveryId:
+          type: "string"
+          format: "UUID"
+          description: "The delivery ID generated by the `Logistics Service`."
+        orderId:
+          type: "string"
+          format: "UUID"
+          description: "The orderId generated by the **`Ordering Application`**."
+        orderDisplayId:
+          type: string
+          description: "Order Id shown in the **`Ordering Application`** interface for the costumer."
+          example: "96b41025"
+        merchant:
+          type: "object"
+          required: [id, "name"]
+          description: "Merchant information."
+          properties:
+            id:
+              allOf:
+                - $ref: "#/components/schemas/Merchant/properties/id"
+            name:
+              allOf:
+                - $ref: "#/components/schemas/BasicInfo/properties/name"
+        customerName:
+          type: "string"
+          description: "Customer Name."  
+        events:
+          type: array
+          description: "Events History."
+          items:
+            allOf:
+              - $ref: "#/components/schemas/DeliveryEvent"
+        problem:
+          type: array
+          description: "History of problems that occuried during delivery."
+          items:
+            allOf:
+              - $ref: "#/components/schemas/DeliveryProblemHistory"
+        vehicle:
+          description: "Chosen Vehicle Info."
+          allOf:
+            - $ref: "#/components/schemas/ChosenVehicle"
+        deliveryPrice:
+          description: "Delivery Pricing Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryPrice"
+        times:
+          description: "ETA Times."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryTimes"
+        deliveryMan:
+          description: "Delivery Man Info."
+          allOf:
+            - $ref: "#/components/schemas/DeliveryMan"
+        combinedOrdersIds:
+          type: "array"
+          description: "Combined Orders Ids. Informs which other orders from the same merchant are being carried by the same delivery man, with the same `deliveryId`."
+          items:
+            type: string
+            format: UUID
+        externalTrackingURL:
+          type: string
+          format: "URI"
+          description: "External URL, provided by the logistics service to track the delivery on a specific page. Example: Real-time map view, or delivery timeline."   
+        
+
+       
+    DeliveryTimes:
+      description: ETA
+      type: object
+      required: [deliveryEtaDate, maxDeliveryTime, isDeliveryFinished]
+      properties:
+        deliveryEtaDate:
+          type: string
+          format: date-time
+          description: "Delivery Eta Datetime. Informs the date and time the delivery man is expected to arrive at the consumer's address for order delivery. \n\n(UTC date-time in ISO timestamp format)."
+        maxDeliveryTime:
+          type: string
+          format: date-time
+          description: "Maximum Date and Time for delivery. This time should not exceed the delivery time limit given in the order request. \n\n(UTC date-time in ISO timestamp format)."
+        isDeliveryFinished:
+          type: boolean
+          description: "Informs whether or not the delivery is finished."
+        deliveryFinishDate:
+          type: string
+          format: date-time
+          description: "Date and time when the delivery finished. \n\n(UTC date-time in ISO timestamp format)."
+
+
+#Financial Report
+
+    PaymentsByBatchId:
       type: "array"
-      description: "Sales made by merchant."
       items:
         type: "object"
         required:
@@ -3774,17 +5275,54 @@ components:
             "businessModelOrder",
           ]
         properties:
-          "@orderId":
+          batchId:
             type: "string"
             format: "UUID"
-          orderDate:
+            description: "Unique Payment Batch Identification."
+          batchStatus:
+            type: "string"
+            description: "Payment Batch Status."
+            enum:
+              - "ABERTO"
+              - "FECHADO"
+          createdAt:
             type: "string"
             format: "date-time"
-            description: "Date the order was placed."
-          lastProcessingDate:
-            type: "string"
-            format: "date-time"
-            description: "Last date that the request was processed."
+            description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+          totals:
+            type: object
+            properties:
+              orders:
+                description: "This is the total for the values related to completed orders."
+                allOf:
+                - $ref: "#/components/schemas/Price"
+              extras:
+                description: "This is the total amount referring to extra values, such as monthly fees, chargebacks and cancellations."
+                allOf:
+                - $ref: "#/components/schemas/Price"
+              total:
+                description: "This value refers to the sum of the `orders` and `extras`."
+                allOf:
+                - $ref: "#/components/schemas/Price"
+          ordersPeriod:
+            type: object
+            properties:
+              startDate:
+                type: "string"
+                format: "date-time"
+                description: "Date and time of the start of the period where orders are being considered within this payment batch. \n\n(UTC date-time in ISO timestamp format)."
+              endDate:
+                type: "string"
+                format: "date-time"
+                description: "Date and time of the end of the period where orders are being considered within this payment batch. \n\n(UTC date-time in ISO timestamp format)."               
+          batchPaymentInfo:
+                description: "This value refers to the sum of the `orders` and `extras`."
+                allOf:
+                - $ref: "#/components/schemas/BatchPaymentInfo"
+          orders:
+                description: "This value refers to the sum of the `orders` and `extras`."
+                allOf:
+                - $ref: "#/components/schemas/PaymentBatchOrders"   
           orderStatus:
             type: "string"
             description: "The event type. **[Click here](#operation/pollingEvents)** for definitions of each type."
@@ -3948,1066 +5486,314 @@ components:
                         type: "string"
                         description: "Digit of the account number."
 
-
-#Common
-
-    Address:
-      type: "object"
-      title: "Address"
-      required:
-        [
-          "country",
-          "state",
-          "city",
-          "district",
-          "street",
-          "number",
-          "postalCode",
-          "complement",
-          "latitude",
-          "longitude",
-        ]
+    BatchPaymentInfo:
+      type: object
       properties:
-        "country":
-          type: "string"
-          pattern: "^[A-Z]{2}$"
-          description: "Two-letter ISO 3166-1 alpha-2 country code."
-          example: "BR"
-        "state":
-          type: "string"
-          description: "State"
-          example: "SP"
-        "city":
-          type: "string"
-          description: "City"
-          example: "São Paulo"
-        "district":
-          type: "string"
-          description: "District"
-          example: "Moema"
-        "street":
-          type: "string"
-          description: "Street"
-          example: "Plaza Avenue"
-        "number":
-          type: "string"
-          description: "Number"
-          example: "100"
-        "postalCode":
-          type: "string"
-          description: "Postal Code"
-          example: "20111-000"
-        "complement":
-          type: "string"
-          description: "Complement"
-          example: "2001"
-        "latitude":
-          type: "number"
-          description: "Latitude in degrees. Values are restricted to the range [[-90, 90]].\n\n\n\nThe precision should be at least 5 decimal places."
-          example: -23.548
-        "longitude":
-          type: "number"
-          description: "Longitude in degrees. Values are restricted to the range [[-180, 180]].\n\n\n\nThe precision should be at least 5 decimal places."
-          example: -46.6363
-
-    ContactPhones:
-      type: "object"
-      title: "Contact Phones"
-      required: ["commercialNumber"]
+        paymentMethod:
+          type: string
+          description: ""
+          enum:
+            - "PIX"
+            - "TED"
+            - "DOC"
+        endToEndPixId:
+          type: string
+          description: ""
+        pixKey:
+          type: string
+          description: ""     
+        creditedAccount:
+          allOf:
+          - $ref: "#/components/schemas/CreditedAccount"
+        paymentStatus:
+          type: string
+          description: ""
+          enum:
+            - "AGENDADO"
+            - "EXECUTADO"   
+        expectedPaymentDate:
+          type: string
+          format: "date-time"
+          description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+        paymentExecutionDate:
+          type: string
+          format: "date-time"
+          description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+          
+    CreditedAccount:
+      type: object
       properties:
-        "commercialNumber":
-          type: "string"
-          description: "Telephone number of the merchant"
-          example: "11999999999"
-        "whatsappNumber":
-          type: "string"
-          description: "Whatsapp number of the merchant"
-          example: "11998888888"
-
-    Price:
-      type: "object"
-      title: "Price"
-      required: ["value", "currency"]
-      properties:
-        value:
-          type: "number"
-          format: "decimal"
-          description: "Price value. 4 decimals places are accepted"
-          example: 40
-        currency:
-          type: "string"
-          pattern: "^[A-Z]{3}$"
-          description: "The 3-letter ISO 4217 currency code."
-          example: "BRL"
-
-    Repository:
-      type: "object"
-      title: "Repository"
-      required:
-        [
-          "document",
-          "corporateName",
-          "postalCode",
-          "email",
-          "website",
-          "baseApiUrl",
-          "TTL",
-          "hostCompanyDocument",
-        ]
-      properties:
+        bankName:
+          type: string
+          description: ""
+        bankNumber:
+          type: string
+          description: ""
+        number:
+          type: string
+          description: ""
+        branchCode:
+          type: string
+          description: ""
         document:
-          type: "string"
-          description: "Company registration document"
-          pattern: "/^\\d{14}$/"
-        corporateName:
-          type: "string"
-          description: "Corporate Name"
-          maxLength: 500
-        postalCode:
-          type: "string"
-          description: "Postal Code"
-        email:
-          type: "string"
-          description: "Contact Email. It is recommended that a contact be made available to deal with specific **Open Delivery** issues."
-        website:
-          type: "string"
-          format: "URL"
-          description: "Company Website. It is recommended to have a website (or landing page) with information about how the company works with Open Delivery."
-        baseApiUrl:
-          type: "string"
-          format: "URL"
-          description: "Base URL of the endpoints with the company's data. It will be used by the indexing system to search the establishments under the responsibility of the menu software (see endpoint) and to search public menus (see endpoint)."
-        hostCompanyDocument:
-          type: "string"
-          description: "Software Service registration document that provides the merchant information."
-          pattern: "/^\\d{14}$/"
-        TTL:
-          type: "integer"
-          description: "Time to Live (in seconds).
-            \nA new request must be done when the TTL expires."
+          type: object
+          properties:
+            type:
+              type: string
+              description: ""
+            number:
+              type: string
+              description: ""
+            documentHolderName:
+              type: string
+              description: ""   
 
-    Error:
+    PaymentBatchOrders:
       type: object
-      required: ["title", "status"]
       properties:
-        title:
-          type: string
-          description: "Short description of the problem."
-          example: "Unexpected error"
-        status:
-          type: integer
-          description: "HTTP code of the returned status."
-          example: 500
-
-    Image:
-      description: Image Object
-      type: object
-      required: ["URL", "CRC"]
-      properties:
-        URL:
-          type: "string"
-          format: "uri"
-          description:
-            "URL pointing to an image of the merchant logo.\n\n Image requirements:
-            \n - Hosted on a secure connection (SSL).
-            \n - File size must be less than 10MB.
-            \n - Image must be in JPEG, PNG or GIF format.
-            \n - Both width and height must be between 320px and 1144px."
-          example: "https://food-company.com/image.jpg"
-        CRC-32:
-          type: string
-          format: "CRC32"
-          description: "CRC-32 of the image file. This field can be used to check for changes in the image file."
-          example: "96b41025"
-
-#Logistic
-
-    DeliveryOrder:
-      description: Delivery Order Object
-      type: object
-      required: [orderId, orderDisplayId, merchant, pickupAddress, returnToMerchant, canCombine, deliveryAddress, vehicle, limitTimes, totalOrderPrice, totalWeight, payments]
-      properties:
-        orderId:
-          type: string
-          format: "UUID"
-          description: "The orderId generated by the `Ordering Application`."
-        orderDisplayId:
-          type: string
-          description: "Order Id shown in the `Ordering Application` interface for the costumer."
-          example: "96b41025"
-        merchant:
-          type: "object"
-          required: [id, "name"]
-          description: "Merchant information."
+        merchants:
+          type: object
+          description: ""
           properties:
             id:
-              allOf:
-                - $ref: "#/components/schemas/Merchant/properties/id"
+              type: string
+              description: ""
             name:
-              allOf:
-                - $ref: "#/components/schemas/BasicInfo/properties/name"
-        pickupAddress:
-          description: "Pickup Address"
-          allOf:
-            - $ref: "#/components/schemas/Address"
-            - type: object
-              properties:
-                pickupLocation:
-                  type: string
-                  description: "Pickup Location"
-                parkingSpace:
-                  type: boolean
-                  description: "Parking Space"
-                instructions:
-                  type: string
-                  description: "Instructions"
-        returnToMerchant:
-          type: boolean
-          description: "Inform whether the delivery man should return to the pickup address after the delivery has been made."
-        canCombine:
-          type: boolean
-          description: "Inform whether the `Logistic Service` can combine this order with other orders in the same delivery."
-        deliveryAddress:
-          description: "Delivery Address"
-          allOf:
-            - $ref: "#/components/schemas/Address"
-            - type: object
-              properties:
-                instructions:
-                  type: string
-                  description: "Instructions"
-        vehicle:
-          description: "Vehicle Info"
-          allOf:
-            - $ref: "#/components/schemas/Vehicle"
-        limitTimes:
-          type: object
-          description: "Limit Times"
-          properties:
-            pickupLimit:
-              type: integer
-              description: ""
-            deliveryLimit:
-              type: integer
-              description: "Delivery Limit"
-            orderCreatedAt:
               type: string
-              format: date-time
-              description: "Order Created At" 
-        totalOrderPrice:
-          description: "Total Order Price"
-          allOf:
-            - $ref: "#/components/schemas/Price"
-        totalWeight:
-          type: integer
-          description: "Total Weight in **grams**"
-        volumes:
-          type: integer
-          description: |-
-            Number of volumes that will be transported in this order. For example, 2 packages, or 3 boxes. 
-            > The unit of measure will not be considered, only the quantity.
-        specialInstructions:
-          type: string
-          description: "Special Instructions"
-        additionalPricePercentual:
-          type: integer
-          description: |-
-              Indicates to the `Logistic Service` an additional percentage to the list price that the requester agrees to pay for the delivery.
-              > The delivery request will be refused if the delivery price exceeds this value.
-
-              Example: List Price = $10  
-                       Actual calculated price = $15  
-                       Additonal price percentage = **50**
-
-
-              In this case, any value informed below 50, would result in the order being rejected.
-        payments:
-          type: object
-          description: "Payments Info"
-          properties:
-            method:
-              type: string
-              description: ""
-              enum:
-                - OFFLINE
-                - ONLINE
-            wirelessPos:
-              type: boolean
               description: ""  
-            offlineMethod:
+            orders:
               type: array
               description: ""
               items:
-                type: object
-                description: ""
-                properties:
-                  type:
-                    type: "string"
-                    enum:
-                      - "CREDIT"
-                      - "DEBIT"
-                      - "MEAL_VOUCHER"
-                      - "FOOD_VOUCHER"
-                      - "PIX"
-                      - "CASH"
-                      - "CREDIT_DEBIT"
-                      - "OTHER"
-                  amount:
-                    allOf:
-                      - $ref: "#/components/schemas/Price"
-            change:
-              allOf:
-                - $ref: "#/components/schemas/Price"
+                allOf:
+                - $ref: "#/components/schemas/PaymentBatchOrdersDetails"
 
-    Vehicle:
-      description: Delivery Order Response Object
+    PaymentBatchOrdersDetails:
       type: object
-      required: [type, container]
       properties:
-        type:
-          type: "array"
-          description: "Vehicle Type"
-          items:
-            type: string
-            enum:
-              - "MOTORBIKE_BAG"
-              - "MOTORBIKE_BOX"
-              - "CAR"
-              - "BYCICLE"
-              - "SCOOTER"
-              - "VUC"
-        container:
-          type: "string"
-          description: "Vehicle container (bag) type"
-          enum:
-            - "NORMAL"
-            - "THERMIC"
-        instruction:
-          type: "string"
-          description: "Special Instructions"
-
-    DeliveryOrderResponse:
-      description: Delivery Order Response Object
-      type: object
-      required: [deliveryId, event, completion]
-      properties:
-        deliveryId:
-          type: "string"
-          format: "UUID"
-          description: "The delivery Id generated by the `Logistic Service`."
-        event:
-          description: "Current event of the order. It is expected to be sent with the value `PENDING` at this moment, since the acceptance or rejection of the request will be processed asynchronously."
-          allOf:
-            - $ref: "#/components/schemas/DeliveryEvent/properties/type"
-        completion:
-          type: "object"
-          description: "The delivery Id generated by the `Logistic Service`."
-          properties:
-            estimate:
-              type: string
-              format: date-time
-              description: ""
-            rejectAfter:
-              type: string
-              format: date-time
-              description: ""  
-        deliveryDetailsURL:
-          type: "string"
-          format: "uri"
-          description: "delivery Details URL"
-
-    DeliveryOrderEvent:
-      description: Delivery Order Event Object
-      type: object
-      required: [deliveryId, orderId, orderDisplayId, merchant, event, customerName, vehicle, deliveryPrice, eta, deliveryMan]
-      properties:
-        deliveryId:
-          type: "string"
-          format: "UUID"
-          description: "The delivery ID generated by the `Logistics Service`."
-        orderId:
-          type: "string"
-          format: "UUID"
-          description: "The orderId generated by the `Ordering Application`."
-        orderDisplayId:
-          type: string
-          description: "Order Id shown in the `Ordering Application` interface for the costumer."
-          example: "96b41025"
-        merchant:
-          type: "object"
-          required: [id, "name"]
-          description: "Merchant information."
-          properties:
-            id:
-              allOf:
-                - $ref: "#/components/schemas/Merchant/properties/id"
-            name:
-              allOf:
-                - $ref: "#/components/schemas/BasicInfo/properties/name"  
-        event:
-          description: "Current Event"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryEvent"
-        problem:
-          type: array
-          description: "List of problems that may occur"
-          items:
-            allOf:
-              - $ref: "#/components/schemas/DeliveryProblem"
-        customerName:
-          type: "string"
-          description: "Customer Name"
-        vehicle:
-          description: "Chosen Vehicle Info"
-          allOf:
-            - $ref: "#/components/schemas/ChosenVehicle"
-        deliveryPrice:
-          description: "Delivery Pricing Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryAvailabilityPrice"
-        eta:
-          description: "ETA Times"
-          allOf:
-            - $ref: "#/components/schemas/ETA"
-        deliveryMan:
-          description: "Delivery Man Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryMan"
-        geoLocalization:
-          description: "Geo Localization"
-          allOf:
-            - $ref: "#/components/schemas/GeoLocalization"
-        combinedOrdersIds:
-          type: "array"
-          description: "Combined Orders Ids"
-          items:
-            type: string
-            format: UUID
-            
-    DeliveryEvent:
-      description: Delivery Event
-      type: object
-      required: [type, datetime]
-      properties:
-        type:
-          type: string
-          enum:
-            - PENDING
-            - ACCEPTED
-            - REJECTED
-            - PICKUP_STARTED
-            - ARRIVED_AT_MERCHANT
-            - ORDER_PICKED
-            - DELIVERY_STARTED
-            - ARRIVED_AT_COSTUMER
-            - ORDER_DELIVERED
-            - RETURNING_TO MERCHANT
-            - RETURNED_TO_MERCHANT
-            - DELIVERY_FINISHED
-        message:
-          type: string
-          description: "Message"
-        datetime:
-          type: string
-          format: date-time
-          description: "Event Datetime"
-        rejectionInfo:
-          description: "Rejection Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryEventDenied"
-
-    DeliveryEventDenied:
-      description: Delivery Event
-      type: object
-      required: [reason]
-      discriminator:
-        propertyName: reason
-        mapping:
-          PRECO_EXCEDIDO: "#/components/schemas/DeliveryEventDeniedPrice"
-          VEICULO_NAO_DISPONIVEL: "#/components/schemas/DeliveryEventDeniedVehicle"
-          NENHUM_ENTREGADOR_DISPONIVEL: "#/components/schemas/DeliveryEventDeniedNoDeliveryMan"
-          NAO_ATENDE_TEMPOS_SOLICITADOS: "#/components/schemas/DeliveryEventDeniedEta"
-          REGIAO_NAO_ATENDIDA: "#/components/schemas/DeliveryEventDenied"
-          OUTROS: "#/components/schemas/DeliveryEventDenied"
-      properties:
-        reason:
-          type: string
-          description: Rejection reason
-          enum:
-            - "PRECO_EXCEDIDO"
-            - "VEICULO_NAO_DISPONIVEL"
-            - "NENHUM_ENTREGADOR_DISPONIVEL"
-            - "NAO_ATENDE_TEMPOS_SOLICITADOS"
-            - "REGIAO_NAO_ATENDIDA"
-            - "OUTROS"
-
-    DeliveryEventDeniedVehicle:
-      description: Metadata
-      allOf:
-        - $ref: "#/components/schemas/DeliveryEventDenied"
-        - type: object
-        - properties:
-            metadata:
-              type: object
-              description: "Information related to the Event Type"
-              properties:
-                availableVehicles:
-                  type: integer
-                  description: "Available Vehicles"
-                vehiclesAvailable:  
-                  allOf:
-                    - $ref: "#/components/schemas/Vehicle"
-                nextAvailableVehicle:
-                  type: integer
-                  description: "Next Available Vehicle" 
-
-    DeliveryEventDeniedPrice:
-      description: Metadata
-      allOf:
-        - $ref: "#/components/schemas/DeliveryEventDenied"
-        - type: object
-        - properties:
-            metadata:
-              type: object
-              description: "Information about the prices"
-              allOf:
-                - $ref: "#/components/schemas/DeliveryAvailabilityPrice"
-
-    DeliveryEventDeniedNoDeliveryMan:
-      description: Metadata
-      allOf:
-        - $ref: "#/components/schemas/DeliveryEventDenied"
-        - type: object
-        - properties:
-            metadata:
-              type: object
-              description: "Information related to the Event Type"
-              properties:
-                nextAvailableVehicle:
-                  type: integer
-                  description: "teste"
-
-    DeliveryEventDeniedEta:
-      description: Metadata
-      allOf:
-        - $ref: "#/components/schemas/DeliveryEventDenied"
-        - type: object
-        - properties:
-            metadata:
-              type: object
-              description: "Information related to the Event Type"
-              allOf:
-                - $ref: "#/components/schemas/ETA"
-
-    DeliveryProblem:
-      description: Delivery Event
-      type: object
-      required: [reason, datetime, canFinishDeliver, needMerchantAction]
-      properties:
-        reason:
-          type: string
-          description: "Problem reason"
-          enum:
-          - DELIVERY_MAN_OCCURRENCE
-          - PAYMENT_PROBLEMS
-          - WRONG_PRODUCT_OR_ITEM
-          - ORDER_DELAYED
-          - ORDER_DAMAGED_OR_VIOLATED
-          - CUSTOMER_DID_NOT_PLACE_ORDER
-          - CUSTOMER_ADDRESS_UNKNOWN
-          - ORDER_MISSING_ITEMS
-          - NOBODY_TO_RECEIVE
-          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
-          - ORDER_DELIVERED_WITHOUT_PAYMENT
-          - FRAUD_OR_THEFT
-          - OTHER
-        message:
-          type: string
-          description: "Message"
-        datetime:
-          type: string
-          format: date-time
-          description: "Problem Datetime"
-        canFinishDeliver:
-          type: boolean
-          description: "Can Finish Deliver"
-        needMerchantAction:
-          type: boolean
-          description: "Need Merchant Action"
-
-    DeliveryProblemHistory:
-      description: Delivery Event
-      type: object
-      required: [reason, datetime, resolved]
-      properties:
-        reason:
-          type: string
-          description: "Problem reason"
-          enum:
-          - DELIVERY_MAN_OCCURRENCE
-          - PAYMENT_PROBLEMS
-          - WRONG_PRODUCT_OR_ITEM
-          - ORDER_DELAYED
-          - ORDER_DAMAGED_OR_VIOLATED
-          - CUSTOMER_DID_NOT_PLACE_ORDER
-          - CUSTOMER_ADDRESS_UNKNOWN
-          - ORDER_MISSING_ITEMS
-          - NOBODY_TO_RECEIVE
-          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
-          - ORDER_DELIVERED_WITHOUT_PAYMENT
-          - FRAUD_OR_THEFT
-          - OTHER
-        message:
-          type: string
-          description: "Message"
-        datetime:
-          type: string
-          format: date-time
-          description: "Problem Datetime"
-        resolved:
-          type: boolean
-          description: "Can Finish Deliver"
-        actionTaken:
-          type: boolean
-          description: "Action taken by the requester"
-          enum:
-            - RETURN_TO_STORE
-            - DELIVER_PRODUCT
-            - CANCEL_DELIVERY 
-        resolutionDate:
-          type: string
-          format: date-time
-          description: "REsolution Datetime"  
-
-    ChosenVehicle:
-      description: Delivery Order Response Object
-      type: object
-      required: [type, container]
-      properties:
-        type:
-          type: string
-          description: "Vehicle Type"
-          enum:
-            - "MOTORBIKE_BAG"
-            - "MOTORBIKE_BOX"
-            - "CAR"
-            - "BYCICLE"
-            - "SCOOTER"
-            - "VUC"
-        container:
-          type: "string"
-          description: "The veichle container (bag) type."
-          enum:
-            - "NORMAL"
-            - "THERMIC"
-        instruction:
-          type: "string"
-          description: "Special Instructions"
-
-    DeliveryAvailabilityPrice:
-      description: Delivery Order Object
-      type: object
-      required: [pickupAddress, returnToMerchant, canCombine, deliveryAddress, vehicle, limitTimes, totalOrderPrice, totalWeight]
-      properties:
-        merchant:
-          type: "object"
-          required: [id, "name"]
-          description: "Merchant information."
-          properties:
-            id:
-              allOf:
-                - $ref: "#/components/schemas/Merchant/properties/id"
-            name:
-              allOf:
-                - $ref: "#/components/schemas/BasicInfo/properties/name"
-        pickupAddress:
-          description: "Pickup Address"
-          allOf:
-            - $ref: "#/components/schemas/Address"
-            - type: object
-              properties:
-                pickupLocation:
-                  type: string
-                  description: "Pickup Location"
-                parkingSpace:
-                  type: boolean
-                  description: "Parking Space"
-                instructions:
-                  type: string
-                  description: "Instructions"
-        returnToMerchant:
-          type: boolean
-          description: "Return To Merchant"
-        canCombine:
-          type: boolean
-          description: "Can Combine the Order with another Orders"
-        deliveryAddress:
-          description: "Delivery Address"
-          allOf:
-            - $ref: "#/components/schemas/Address"
-            - type: object
-              properties:
-                instructions:
-                  type: string
-                  description: "Instructions"
-        vehicle:
-          description: "Vehicle Info"
-          allOf:
-            - $ref: "#/components/schemas/Vehicle"
-        limitTimes:
+        merchants:
           type: object
-          description: "Limit Times"
-          properties:
-            pickupLimit:
-              type: integer
-              description: ""
-            deliveryLimit:
-              type: integer
-              description: "Delivery Limit"
-        totalOrderPrice:
-          description: "Total Order Price"
-          allOf:
-            - $ref: "#/components/schemas/Price"
-        totalWeight:
-          type: integer
-          description: "Total Weight"
-        volumes:
-          type: integer
-          description: "Volumes"
-        specialInstructions:
-          type: string
-          description: "Special Instructions"
-        additionalPricePercentual:
-          type: integer
-          description: "Additional Price Percentual"
-        onlinePayment:
-          type: boolean
-          description: "Payments Info"
-
-    DeliveryAvailabilityPriceResponse:
-      description: Delivery Order Response Object
-      type: object
-      properties:
-        deliveryPrice:
-          description: "Delivery Pricing Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryAvailabilityPrice"        
-        vehicles:
-          type: object
-          description: "Chosen Vehicle Info"
-          properties:
-            availableVehicles:
-              type: integer
-              description: "Available Vehicles"
-            vehiclesAvailable:  
-              allOf:
-                - $ref: "#/components/schemas/Vehicle"
-            nextAvailableVehicle:
-              type: integer
-              description: "Next Available Vehicle"    
-        ETAs:
-          description: "ETAs"
-          allOf:
-            - $ref: "#/components/schemas/ETA"
-   
-    ETA:
-      description: ETA
-      type: object
-      required: [pickupEtaMinutes, pickupEtaDatetime, deliveryEtainMinutes, deliveryEtaDatetime, maxDeliveryTime]
-      properties:
-        pickupEtaMinutes:
-          type: integer
-          description: "Pickup Eta Minutes"
-        pickupEtaDatetime:
-          type: string
-          format: date-time
-          description: "Pickup Eta Datetime"
-        deliveryEtainMinutes:
-          type: integer
-          description: "Delivery Eta in Minutes"
-        deliveryEtaDatetime:
-          type: string
-          format: date-time
-          description: "Delivery Eta Datetime"
-        maxDeliveryTime:
-          type: string
-          format: date-time
-          description: "Max Delivery Time"
-  
-          
-    DeliveryMan:
-      description: Delivery Man
-      type: object
-      required: [id, name]
-      properties:
-        id:
-          type: string
-          description: "Id"
-        name:
-          type: string
-          description: "Name"
-        pictureURL:
-          type: string
-          format: "URI"
-          description: "Picture URL"
-        phone:
-          type: string
-          description: "Phone"
-
-    GeoLocalization:
-      description: Delivery Event
-      type: object
-      required: [latitude, longitude, distanceToPickup, distanceToDelivery, timestamp]
-      properties:
-        latitude:
-          type: string
-          description: "latitude"
-        longitude:
-          type: string
-          description: "longitude"
-        lastAddress:
-          description: Delivery Event
-          type: object
-          required: [id, orderId, orderDisplayId]
-          properties:
-            country:
-              type: string
-              description: "Country"
-            state:
-              type: string
-              format: date-time
-              description: "State"
-            city:
-              type: string
-              format: date-time
-              description: "City"
-            neighborhood:
-              type: string
-              format: date-time
-              description: "Neighborhood"
-            streetName:
-              type: string
-              format: date-time
-              description: "Street Name"
-            postalCode:
-              type: string
-              format: date-time
-              description: "Postal Code"
-        distanceToPickup:
-          type: string
-          format: date-time
-          description: "Distance To Pickup"
-        distanceToDelivery:
-          type: string
-          format: date-time
-          description: "Distance To Delivery"
-        timestamp:
-          type: string
-          format: date-time
-          description: "Timestamp"
-
-    DeliveryCancel:
-      description: Delivery Cancel
-      type: object
-      required: [reason]
-      properties:
-        reason:
-          type: string
-          description: "Reason"
-          enum:
-            - CONSUMER_CANCELLATION_REQUESTED
-            - NO_SHOW 
-            - PROBLEM_AT_MERCHANT  
-            - HIGH_ACCEPTANCE_TIME
-            - INCORRECT_ORDER_OR_PRODUCT_PICKUP 
-            - PROBLEM_RESOLUTION
-            - DISCOMBINE_ORDER
-            - OTHER
-        action:
-          type: string
-          description: "Action"
-          enum:
-            - RETURN_TO_STORE
-            - CANCEL_DELIVERY
-        message:
-          type: string
-          description: "Message" 
-          
-    DeliveryCancelResponse:
-      type: object
-      required: [additionalCharges]
-      properties:
-        additionalCharges:
-          type: boolean
           description: ""
-
-    DeliveryHandleProblem:
-      description: Delivery Cancel
-      type: object
-      required: [reason, action]
-      properties:
-        reason:
-          type: string
-          description: "Problem Reason"
-          enum:
-          - DELIVERY_MAN_OCCURRENCE
-          - PAYMENT_PROBLEMS
-          - WRONG_PRODUCT_OR_ITEM
-          - ORDER_DELAYED
-          - ORDER_DAMAGED_OR_VIOLATED
-          - CUSTOMER_DID_NOT_PLACE_ORDER
-          - CUSTOMER_ADDRESS_UNKNOWN
-          - ORDER_MISSING_ITEMS
-          - NOBODY_TO_RECEIVE
-          - DELIVERY_MAN_WAITING_PAYMENT_FOR_ALREADY_PAID_ORDER
-          - ORDER_DELIVERED_WITHOUT_PAYMENT
-          - FRAUD_OR_THEFT
-          - OTHER
-        action:
-          type: string
-          description: "Resolution Action"
-          enum:
-          - RETURN_TO_STORE
-          - DELIVER_PRODUCT
-          - CANCEL_DELIVERY  
-        message:
-          type: string
-          description: "Message" 
-          
-    DeliveryOrderPicked:
-      type: "object"
-      title: "Order Picked"
-      properties:
-        pickupDate:
-          type: "string"
-          format: date-time
-          description: "Date and time when the order pickup occurred"
-        volumePicked:
-          type: "integer"
-          description: "Number of volumes picked up"
-        observation:
-          type: string
-          description: "Observation"
-    
-    DeliveryOrderFinish:
-      type: "object"
-      title: "Order Picked"
-      required: ["finishDate"]
-      properties:
-        finishDate:
-          type: "string"
-          format: date-time
-          description: "Date and time when delivery completion occurred"
-        observation:
-          type: string
-          description: "Observation"  
-
-          
-    DeliveryOrderDetails:
-      description: Delivery Order Event Object
-      type: object
-      required: [deliveryId, orderId, orderDisplayId, merchant, customerName, events, vehicle, deliveryPrice, times, deliveryDetailsURL]
-      properties:
-        deliveryId:
-          type: "string"
-          format: "UUID"
-          description: "The delivery ID generated by the `Logistics Service`."
-        orderId:
-          type: "string"
-          format: "UUID"
-          description: "The orderId generated by the `Ordering Application`."
-        orderDisplayId:
-          type: string
-          description: "Order Id shown in the `Ordering Application` interface for the costumer."
-          example: "96b41025"
-        merchant:
-          type: "object"
-          required: [id, "name"]
-          description: "Merchant information."
           properties:
             id:
-              allOf:
-                - $ref: "#/components/schemas/Merchant/properties/id"
+              type: string
+              description: ""
             name:
-              allOf:
-                - $ref: "#/components/schemas/BasicInfo/properties/name"
-        customerName:
-          type: "string"
-          description: "Customer Name"  
-        events:
-          type: array
-          description: "Events History"
-          items:
-            allOf:
-              - $ref: "#/components/schemas/DeliveryEvent"
-        problem:
-          type: array
-          description: "History of problems that occuried during delivery"
-          items:
-            allOf:
-              - $ref: "#/components/schemas/DeliveryProblemHistory"
-        vehicle:
-          description: "Chosen Vehicle Info"
-          allOf:
-            - $ref: "#/components/schemas/ChosenVehicle"
-        deliveryPrice:
-          description: "Delivery Pricing Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryAvailabilityPrice"
-        times:
-          description: "ETA Times"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryTimes"
-        deliveryMan:
-          description: "Delivery Man Info"
-          allOf:
-            - $ref: "#/components/schemas/DeliveryMan"
-        combinedOrdersIds:
-          type: "array"
-          description: "Combined Orders Ids"
-          items:
-            type: string
-            format: UUID
-        deliveryDetailsURL:
-          type: "string"
-          format: "uri"
-          description: "delivery Details URL"    
+              type: string
+              description: ""  
+            orders:
+              type: array
+              description: ""
+              items:
+                allOf:
+                - $ref: "#/components/schemas/CreditedAccount"
 
-       
-    DeliveryTimes:
-      description: ETA
-      type: object
-      required: [deliveryEtaDate, maxDeliveryTime, isDeliveryFinished]
-      properties:
-        deliveryEtaDate:
-          type: string
-          format: date-time
-          description: "Max Delivery Time"
-        maxDeliveryTime:
-          type: string
-          format: date-time
-          description: "Max Delivery Time"          
-        isDeliveryFinished:
-          type: boolean
-          description: "Is Delivery Finished"
-        deliveryFinishDate:
-          type: string
-          format: date-time
-          description: "Delivery Eta Datetime"
+#Sales Report
 
-  
+    # SalesByMerchant:
+    #   type: "array"
+    #   description: "Sales made by merchant."
+    #   items:
+    #     type: "object"
+    #     required:
+    #       [
+    #         id,
+    #         "orderDate",
+    #         "lastProcessingDate",
+    #         "orderStatus",
+    #         "companyName",
+    #         "documentNumber",
+    #         "payment",
+    #         "businessModelOrder",
+    #       ]
+    #     properties:
+    #       "@orderId":
+    #         type: "string"
+    #         format: "UUID"
+    #       orderDate:
+    #         type: "string"
+    #         format: "date-time"
+    #         description: "Date the order was placed. \n\n(UTC date-time in ISO timestamp format)."
+    #       lastProcessingDate:
+    #         type: "string"
+    #         format: "date-time"
+    #         description: "Last date that the request was processed. \n\n(UTC date-time in ISO timestamp format)."
+    #       orderStatus:
+    #         type: "string"
+    #         description: "The event type. **[Click here](#operation/pollingEvents)** for definitions of each type."
+    #         enum:
+    #           - "CREATED"
+    #           - "CONFIRMED"
+    #           - "DISPATCHED"
+    #           - "READY_FOR_PICKUP"
+    #           - "PICKUP_AREA_ASSIGNED"
+    #           - "CONCLUDED"
+    #           - "CANCELLATION_REQUESTED"
+    #           - "CANCELLATION_REQUEST_DENIED"
+    #           - "CANCELLED"
+    #           - "ORDER_CANCELLATION_REQUEST"
+    #       companyName:
+    #         type: "string"
+    #       documentNumber:
+    #         type: "string"
+    #         description: "Company registration document."
+    #       businessModelOrder:
+    #         type: "string"
+    #         enum:
+    #           - "MARKETPLACE"
+    #       payment:
+    #         type: "object"
+    #         required: ["type", "method", "liability", "billing", "transfer"]
+    #         description: "All payment information related to the orders."
+    #         properties:
+    #           type:
+    #             type: "string"
+    #             description: "How the payment was made. Payment online, via apps, or in cash (offline)."
+    #             enum:
+    #               - "ONLINE"
+    #               - "OFFLINE"
+    #           method:
+    #             type: "string"
+    #             description: "Method used to pay the order."
+    #             enum:
+    #               - "CREDIT"
+    #               - "DEBIT"
+    #               - "MEAL_VOUCHER"
+    #               - "FOOD_VOUCHER"
+    #               - "DIGITAL_WALLET"
+    #               - "PIX"
+    #               - "CASH"
+    #               - "CREDIT_DEBIT"
+    #               - "COUPON"
+    #               - "REDEEM"
+    #               - "PREPAID_REDEEM"
+    #               - "OTHER"
+    #           brand:
+    #             type: "string"
+    #             description: "Brand name of the credit card or other means of payment that has a brand."
+    #           liability:
+    #             type: "string"
+    #             enum:
+    #               - "MERCHANT"
+    #           cardNumber:
+    #             type: "string"
+    #           billing:
+    #             type: "object"
+    #             description: "Information related to order collections."
+    #             required:
+    #               [
+    #                 "gmv",
+    #                 "totalBag",
+    #                 "deliveryFee",
+    #                 "benefitMarkeplace",
+    #                 "benefitMerchant",
+    #                 "commission",
+    #                 "acquirerFee",
+    #                 "deliveryCommission",
+    #                 "commissionRate",
+    #                 "acquirerFeeRate",
+    #                 "anticipationFee",
+    #                 "anticipationFeeRate",
+    #                 "totalDebit",
+    #                 "totalCredit",
+    #               ]
+    #             properties:
+    #               gmv:
+    #                 type: "number"
+    #                 description: "Gross Merchandise Value"
+    #               totalBag:
+    #                 type: "number"
+    #                 description: "Total order in cart."
+    #               deliveryFee:
+    #                 type: "number"
+    #                 description: "Delivery fee."
+    #               benefitMarkeplace:
+    #                 type: "number"
+    #                 description: "Marketplace-related benefits."
+    #               benefitMerchant:
+    #                 type: "number"
+    #                 description: "Merchant-related benefits."
+    #               commission:
+    #                 type: "number"
+    #                 description: "Sales-related commission."
+    #               acquirerFee:
+    #                 type: "number"
+    #                 description: "Acquirer-related fee."
+    #               deliveryCommission:
+    #                 type: "number"
+    #                 description: "Commission related to the delivery of the order."
+    #               commissionRate:
+    #                 type: "number"
+    #                 format: "double"
+    #                 description: "Commission Fee."
+    #               acquirerFeeRate:
+    #                 type: "number"
+    #                 format: "double"
+    #                 description: "Acquirer-related fee rate."
+    #               anticipationFee:
+    #                 type: "number"
+    #                 description: "Possible fee received in advance."
+    #               anticipationFeeRate:
+    #                 type: "number"
+    #                 format: "double"
+    #                 description: "Anticipation fee rate."
+    #               totalDebit:
+    #                 type: "number"
+    #                 description: "Total debit of the order."
+    #               totalCredit:
+    #                 type: "number"
+    #                 description: "Total credit of the order."
+    #           transfer:
+    #             type: "object"
+    #             required: ["expectedTransferDate", "expectedBankAccount"]
+    #             description: "Related to transferring the order values."
+    #             properties:
+    #               expectedTransferDate:
+    #                 type: "string"
+    #                 format: "date-time"
+    #               expectedBankAccount:
+    #                 type: "object"
+    #                 required:
+    #                   [
+    #                     "bankNumber",
+    #                     "bankName",
+    #                     "branchCode",
+    #                     "accountNumber",
+    #                     "accountNumberDigit",
+    #                   ]
+    #                 properties:
+    #                   bankNumber:
+    #                     type: "string"
+    #                     description: "Bank registration number."
+    #                   bankName:
+    #                     type: "string"
+    #                     description: "Bank name."
+    #                   branchCode:
+    #                     type: "string"
+    #                     description: "Branch number."
+    #                   branchCodeDigit:
+    #                     type: "string"
+    #                     description: "Branch code, if required."
+    #                   accountNumber:
+    #                     type: "string"
+    #                     description: "Account number."
+    #                   accountNumberDigit:
+    #                     type: "string"
+    #                     description: "Digit of the account number."
+
+
   examples:
     tokenExample:
       summary: New Token
       value:
-        clientId: "123"
-        clientSecret: "asldfias9834023jsdf032j023f02"
-        grantType: "client_credentials"
+        client_id: "user1234"
+        client_secret: "ty23yhmas4ldfias9834023jsdf032j023f02"
+        grant_type: "client_credentials"
 
     orderExample:
       summary: "Sample Order"
       value:
-        id: "22815773000169-4818e72f-2304-466f-9fe7-af08f34ac4ed"
+        id: "4818e72f-2304-466f-9fe7-af08f34ac4ed"
         type: "DELIVERY"
         displayId: "12345"
         createdAt: "2021-05-27T19:38:10.332Z"
@@ -5120,7 +5906,7 @@ components:
             city: "São Paulo"
             postalCode: "20111-000"
             coordinates:
-              latitude: -23.5475
+              latitude: -23.54754
               longitude: -46.63611
             neighborhood: "Moema"
             state: "SP"
@@ -5157,7 +5943,8 @@ components:
             number: "100"
             postalCode: "20111-000"
             complement: "2001"
-            latitude: -23.5480
+            reference: "Yellow house"
+            latitude: -23.54804
             longitude: -46.63630
           contactEmails: ["food@company.com"]
           contactPhones:
@@ -5182,16 +5969,16 @@ components:
                     {
                         "geoCoordinates": [
                             {
-                                "latitude": -20.2333,
-                                "longitude": -20.8383
+                                "latitude": -20.23330,
+                                "longitude": -20.83830
                             },
                             {
-                                "latitude": -20.8500,
-                                "longitude": -21.0000
+                                "latitude": -20.85008,
+                                "longitude": -21.00007
                             },
                             {
-                                "latitude": -21.1500,
-                                "longitude": -21.9548
+                                "latitude": -21.15002,
+                                "longitude": -21.95483
                             }
                         ],
                         "price": {
@@ -5252,7 +6039,7 @@ components:
                   holidayHours:
                     [
                       {
-                        date: "7/4/2021",
+                        date: "2021-05-27",
                         timePeriods:
                           {
                             startTime: "12:00:00.000Z",
@@ -5356,8 +6143,8 @@ components:
               disclaimer: "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
               categoryId:
                 [
-                  "22815773000169-92fad022-2c28-4239-a026-989f5b555cb7",
-                  "22815773000169-6bb71850-1d40-49f9-8046-b13e068c0cca",
+                  "92fad022-2c28-4239-a026-989f5b555cb7",
+                  "6bb71850-1d40-49f9-8046-b13e068c0cca",
                 ],
             },
           ]
@@ -5376,9 +6163,9 @@ components:
               externalCode: "13",
               status: "AVAILABLE",
               availabilityId:
-                ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
+                ["11d063c4-73a7-4f87-a0eb-71636cc02029"],
               itemOfferId:
-                ["22815773000169-f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"],
+                ["f080cfb3-5c4a-4eb7-907d-2de3bbb5dfb9"],
             },
             {
               id: 6bb71850-1d40-49f9-8046-b13e068c0cca",
@@ -5393,9 +6180,9 @@ components:
               externalCode: "13",
               status: "AVAILABLE",
               availabilityId:
-                ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
+                ["11d063c4-73a7-4f87-a0eb-71636cc02029"],
               itemOfferId:
-                ["22815773000169-377b99ba-5413-43d1-b875-7cdcaa72860e"],
+                ["377b99ba-5413-43d1-b875-7cdcaa72860e"],
             },
           ]
         itemOffers:
@@ -5406,9 +6193,9 @@ components:
               index: 0,
               price: { value: 43.00, originalValue: 43.00, currency: "BRL" },
               availabilityId:
-                ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
+                ["11d063c4-73a7-4f87-a0eb-71636cc02029"],
               optionGroupsId:
-                ["22815773000169-fe67e551-f42f-499a-8afb-0ed893c71fa3"],
+                ["fe67e551-f42f-499a-8afb-0ed893c71fa3"],
             },
             {
               id: 377b99ba-5413-43d1-b875-7cdcaa72860e,
@@ -5416,9 +6203,9 @@ components:
               index: 1,
               price: { value: 30.00, originalValue: 30.00, currency: "BRL" },
               availabilityId:
-                ["22815773000169-11d063c4-73a7-4f87-a0eb-71636cc02029"],
+                ["11d063c4-73a7-4f87-a0eb-71636cc02029"],
               optionGroupsId:
-                ["22815773000169-c524c066-96fa-458d-b78c-3712661529b3"],
+                ["c524c066-96fa-458d-b78c-3712661529b3"],
             },
           ]
         optionGroups:
