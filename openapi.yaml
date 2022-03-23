@@ -1537,14 +1537,19 @@ paths:
 
 # Financial Report
 
-  /salesReport:
+  /paymentBatchByIds:
     get:
-      operationId: "financialReportById"
+      operationId: "paymentBatchId"
       tags:
         - "financialReport"
-      summary: "Financial Report endpoint"
+      summary: "Get detailed information about payments batches by Id"
       description: |-
-        This endpoint is responsible for the sales report.
+        This endpoint is responsible for returning a complete report for one or more payment batches so that the merchant can perform its bank reconciliation..
+
+        It is necessary to inform at least one `batchId` in the request query.
+
+        > **IMPORTANT: All values that will be _credited_ to the merchant must be filled with POSITIVE values. Likewise, all the values that will be __charged__ to the merchant must be filled with NEGATIVE values.**
+        
         <br /><br />
         <span style="text-decoration:underline; color:#26323880; font-size:13.006px">HOST:</span> **ORDERING APPLICATION**
 
@@ -1553,24 +1558,27 @@ paths:
           <img src="https://abrasel-nacional.github.io/docs/images/directionGETSS_OA.png" />
         </div>
       parameters:
-        - name: id
+        - name: batchIds
           in: "query"
           required: true
+          description: "List of `batchId` to be returned."
           schema:
-            type: "string"
-            format: "UUID"
-        - name: "startDate"
-          required: true
-          in: "query"
-          schema:
-            type: "string"
-            format: "date-time"
-        - name: "endDate"
-          required: true
-          in: "query"
-          schema:
-            type: "string"
-            format: "date-time"
+            type: array
+            items:
+              type: "string"
+              description: batchId
+        # - name: "startDate"
+        #   required: true
+        #   in: "query"
+        #   schema:
+        #     type: "string"
+        #     format: "date-time"
+        # - name: "endDate"
+        #   required: true
+        #   in: "query"
+        #   schema:
+        #     type: "string"
+        #     format: "date-time"
       responses:
         "200":
           description: "Successfully returns the report."
@@ -1586,6 +1594,92 @@ paths:
           $ref: "#/components/responses/NotFound"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+
+  /paymentBatchByDate:
+    get:
+      operationId: "paymentBatchDate"
+      tags:
+        - "financialReport"
+      summary: "Get summary information about payments batches by dates"
+      description: |-
+        This endpoint is responsible for returning a summary report for one or more payment batches so that the merchant can perform its bank reconciliation..
+
+        The requisition can be filtered by a date range, or by batch or payment status.
+
+        > **IMPORTANT: Each system that implements this endpoint will have a different processing capacity, so the number of records that will be returned may vary from one system to another. The enpoint will always return a maximum number of records (which varies from system to system), even if the search has found more records than it returned. Check the `summary` object to know if all the records from the period informed were returned, or if a new search is necessary, with more restrictive filters.**
+
+        > **IMPORTANT: All values that will be _credited_ to the merchant must be filled with POSITIVE values. Likewise, all the values that will be __charged__ to the merchant must be filled with NEGATIVE values.**
+        
+        <br /><br />
+        <span style="text-decoration:underline; color:#26323880; font-size:13.006px">HOST:</span> **ORDERING APPLICATION**
+
+        <span style="text-decoration:underline; color:#26323880; font-size:13.006px">DIRECTION:</span>
+        <div align="center">
+          <img src="https://abrasel-nacional.github.io/docs/images/directionGETSS_OA.png" />
+        </div>
+      parameters:
+        - name: "orderDateStart"
+          required: false
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+            description: " \n\n(UTC date-time in ISO timestamp format)."
+        - name: "orderDateEnd"
+          required: false
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+            description: " \n\n(UTC date-time in ISO timestamp format)."
+        - name: "paymentDateStart"
+          required: false
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+            description: " \n\n(UTC date-time in ISO timestamp format)."
+        - name: "paymentDateEnd"
+          required: false
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+            description: " \n\n(UTC date-time in ISO timestamp format)."
+        - name: "batchStatus"
+          required: false
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "OPEN"
+              - "CLOSED"
+        - name: "paymentStatus"
+          required: false
+          in: "query"
+          schema:
+            type: "string"  
+            enum:
+              - "SCHEDULED"
+              - "PAID"
+              - "REJECTED"
+              - "WAITING_MERCHANT_PAYMENT"
+              - "DEBIT_IN_THE_NEXT_BATCH"           
+      responses:
+        "200":
+          description: "Successfully returns the report."
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/PaymentsByBatchDate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/AccessDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"          
 
 # Sales Report
 
@@ -5283,29 +5377,31 @@ components:
             type: "string"
             description: "Payment Batch Status."
             enum:
-              - "ABERTO"
-              - "FECHADO"
+              - "OPEN"
+              - "CLOSED"
           createdAt:
             type: "string"
             format: "date-time"
             description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
           totals:
             type: object
+            description: "Contains the total amounts that make up the batch payment."
             properties:
               orders:
-                description: "This is the total for the values related to completed orders."
+                description: "This is the total amount for the values related to completed orders."
                 allOf:
                 - $ref: "#/components/schemas/Price"
               extras:
                 description: "This is the total amount referring to extra values, such as monthly fees, chargebacks and cancellations."
                 allOf:
                 - $ref: "#/components/schemas/Price"
-              total:
+              batchTotal:
                 description: "This value refers to the sum of the `orders` and `extras`."
                 allOf:
                 - $ref: "#/components/schemas/Price"
           ordersPeriod:
             type: object
+            description: "Period in which the orders were considered to be included in this batch."
             properties:
               startDate:
                 type: "string"
@@ -5316,277 +5412,428 @@ components:
                 format: "date-time"
                 description: "Date and time of the end of the period where orders are being considered within this payment batch. \n\n(UTC date-time in ISO timestamp format)."               
           batchPaymentInfo:
-                description: "This value refers to the sum of the `orders` and `extras`."
+                description: "It contains Information related to the payment of this batch."
                 allOf:
                 - $ref: "#/components/schemas/BatchPaymentInfo"
-          orders:
-                description: "This value refers to the sum of the `orders` and `extras`."
+          charges:
+                description: "Breakdown of all the values that make up the total values of the batch."
                 allOf:
-                - $ref: "#/components/schemas/PaymentBatchOrders"   
-          orderStatus:
-            type: "string"
-            description: "The event type. **[Click here](#operation/pollingEvents)** for definitions of each type."
-            enum:
-              - "CREATED"
-              - "CONFIRMED"
-              - "DISPATCHED"
-              - "READY_FOR_PICKUP"
-              - "PICKUP_AREA_ASSIGNED"
-              - "CONCLUDED"
-              - "CANCELLATION_REQUESTED"
-              - "CANCELLATION_REQUEST_DENIED"
-              - "CANCELLED"
-              - "ORDER_CANCELLATION_REQUEST"
-          companyName:
-            type: "string"
-          documentNumber:
-            type: "string"
-            description: "Company registration document."
-          businessModelOrder:
-            type: "string"
-            enum:
-              - "MARKETPLACE"
-          payment:
-            type: "object"
-            required: ["type", "method", "liability", "billing", "transfer"]
-            description: "All payment information related to the orders."
+                - $ref: "#/components/schemas/PaymentBatchDetails"   
+
+    PaymentsByBatchDate:
+      type: "array"
+      items:
+        type: "object"
+        required:
+          [
+            id,
+            "orderDate",
+            "lastProcessingDate",
+            "orderStatus",
+            "companyName",
+            "documentNumber",
+            "payment",
+            "businessModelOrder",
+          ]
+        properties:
+          summary:
+            type: object
+            description: ""
             properties:
-              type:
-                type: "string"
-                description: "How the payment was made. Payment online, via apps, or in cash (offline)."
-                enum:
-                  - "ONLINE"
-                  - "OFFLINE"
-              method:
-                type: "string"
-                description: "Method used to pay the order."
-                enum:
-                  - "CREDIT"
-                  - "DEBIT"
-                  - "MEAL_VOUCHER"
-                  - "FOOD_VOUCHER"
-                  - "DIGITAL_WALLET"
-                  - "PIX"
-                  - "CASH"
-                  - "CREDIT_DEBIT"
-                  - "COUPON"
-                  - "REDEEM"
-                  - "PREPAID_REDEEM"
-                  - "OTHER"
-              brand:
-                type: "string"
-                description: "Brand name of the credit card or other means of payment that has a brand."
-              liability:
-                type: "string"
-                enum:
-                  - "MERCHANT"
-              cardNumber:
-                type: "string"
-              billing:
-                type: "object"
-                description: "Information related to order collections."
-                required:
-                  [
-                    "gmv",
-                    "totalBag",
-                    "deliveryFee",
-                    "benefitMarkeplace",
-                    "benefitMerchant",
-                    "commission",
-                    "acquirerFee",
-                    "deliveryCommission",
-                    "commissionRate",
-                    "acquirerFeeRate",
-                    "anticipationFee",
-                    "anticipationFeeRate",
-                    "totalDebit",
-                    "totalCredit",
-                  ]
+              searchedPeriod:
+                type: object
+                description: ""
                 properties:
-                  gmv:
-                    type: "number"
-                    description: "Gross Merchandise Value"
-                  totalBag:
-                    type: "number"
-                    description: "Total order in cart."
-                  deliveryFee:
-                    type: "number"
-                    description: "Delivery fee."
-                  benefitMarkeplace:
-                    type: "number"
-                    description: "Marketplace-related benefits."
-                  benefitMerchant:
-                    type: "number"
-                    description: "Merchant-related benefits."
-                  commission:
-                    type: "number"
-                    description: "Sales-related commission."
-                  acquirerFee:
-                    type: "number"
-                    description: "Acquirer-related fee."
-                  deliveryCommission:
-                    type: "number"
-                    description: "Commission related to the delivery of the order."
-                  commissionRate:
-                    type: "number"
-                    format: "double"
-                    description: "Commission Fee."
-                  acquirerFeeRate:
-                    type: "number"
-                    format: "double"
-                    description: "Acquirer-related fee rate."
-                  anticipationFee:
-                    type: "number"
-                    description: "Possible fee received in advance."
-                  anticipationFeeRate:
-                    type: "number"
-                    format: "double"
-                    description: "Anticipation fee rate."
-                  totalDebit:
-                    type: "number"
-                    description: "Total debit of the order."
-                  totalCredit:
-                    type: "number"
-                    description: "Total credit of the order."
-              transfer:
-                type: "object"
-                required: ["expectedTransferDate", "expectedBankAccount"]
-                description: "Related to transferring the order values."
-                properties:
-                  expectedTransferDate:
+                  startDate:
                     type: "string"
                     format: "date-time"
-                  expectedBankAccount:
-                    type: "object"
-                    required:
-                      [
-                        "bankNumber",
-                        "bankName",
-                        "branchCode",
-                        "accountNumber",
-                        "accountNumberDigit",
-                      ]
-                    properties:
-                      bankNumber:
-                        type: "string"
-                        description: "Bank registration number."
-                      bankName:
-                        type: "string"
-                        description: "Bank name."
-                      branchCode:
-                        type: "string"
-                        description: "Branch number."
-                      branchCodeDigit:
-                        type: "string"
-                        description: "Branch code, if required."
-                      accountNumber:
-                        type: "string"
-                        description: "Account number."
-                      accountNumberDigit:
-                        type: "string"
-                        description: "Digit of the account number."
+                    description: " \n\n(UTC date-time in ISO timestamp format)."
+                  endDate:
+                    type: "string"
+                    format: "date-time"
+                    description: " \n\n(UTC date-time in ISO timestamp format)."
+              totalRecordsFound:
+                type: integer
+              totalRecordsReturned:
+                type: integer
+              warningMessage:
+                type: string
+          batches:
+            type: object
+            description: ""
+            properties:      
+              batchId:
+                type: "string"
+                format: "UUID"
+                description: "Unique Payment Batch Identification."
+              batchStatus:
+                type: "string"
+                description: "Payment Batch Status."
+                enum:
+                  - "OPEN"
+                  - "CLOSED"
+              createdAt:
+                type: "string"
+                format: "date-time"
+                description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+              totals:
+                type: object
+                description: "Contains the total amounts that make up the batch payment."
+                properties:
+                  orders:
+                    description: "This is the total amount for the values related to completed orders."
+                    allOf:
+                    - $ref: "#/components/schemas/Price"
+                  extras:
+                    description: "This is the total amount referring to extra values, such as monthly fees, chargebacks and cancellations."
+                    allOf:
+                    - $ref: "#/components/schemas/Price"
+                  batchTotal:
+                    description: "This value refers to the sum of the `orders` and `extras`."
+                    allOf:
+                    - $ref: "#/components/schemas/Price"
+              ordersPeriod:
+                type: object
+                description: "Period in which the orders were considered to be included in this batch."
+                properties:
+                  startDate:
+                    type: "string"
+                    format: "date-time"
+                    description: "Date and time of the start of the period where orders are being considered within this payment batch. \n\n(UTC date-time in ISO timestamp format)."
+                  endDate:
+                    type: "string"
+                    format: "date-time"
+                    description: "Date and time of the end of the period where orders are being considered within this payment batch. \n\n(UTC date-time in ISO timestamp format)."               
+              batchPaymentInfo:
+                description: "It contains Information related to the payment of this batch."
+                allOf:
+                - $ref: "#/components/schemas/BatchPaymentInfo"
+              merchantsConsolidated:
+                type: integer
+                description: "Number of different merchants that are involved in the payment batch."
+                     
 
     BatchPaymentInfo:
       type: object
       properties:
         paymentMethod:
           type: string
-          description: ""
+          description: "The payment method used to make the payment for this batch. If the batch total is zero or negative (meaning that the merchant has a debit with the marketplace), then use `NO_TRANSFER`."
           enum:
             - "PIX"
             - "TED"
             - "DOC"
+            - "OTHER"
+            - "NO_TRANSFER"
         endToEndPixId:
           type: string
-          description: ""
+          description: "PIX end to end identification. \n\n**Required** if `paymentMethod` is `PIX`."
         pixKey:
           type: string
-          description: ""     
+          description: "The PIX key to where the transfer was made. \n\n**Required** if `paymentMethod` is `PIX`."     
         creditedAccount:
-          allOf:
-          - $ref: "#/components/schemas/CreditedAccount"
+             type: object
+             description: "The bank account to where the transfer was made. \n\n**Required** if `paymentMethod` is  `TED` or `DOC`."
+             properties:
+              bankName:
+                type: string
+                description: "The name of the Bank."
+              bankNumber:
+                type: integer
+                description: "The number of the Bank."
+              accountNumber:
+                type: string
+                description: "Account number. If it has a digit, include it at the end of the account number."
+              branchCode:
+                type: string
+                description: "Branch Code. If it has a digit, include it at the end of the account number."
+              document:
+                type: object
+                description: "Information about the document of the person responsible for the credited account."
+                properties:
+                  type:
+                    type: string
+                    description: "The type of the registration document."
+                    enum:
+                      - "CPF"
+                      - "CNPJ"
+                      - "OTHER"
+                  number:
+                    type: string
+                    description: "Person or Company registration document number (only numbers)."
+                    maxLength: 14
+                  documentHolderName:
+                    type: string
+                    description: "Person or Company name."   
         paymentStatus:
           type: string
-          description: ""
+          description: |-
+                The payment status. 
+
+                - If the batch total is positive, which means the merchant will receive a credit from the marketplace, then the following statuses should be used:
+                `SCHEDULED`, `PAID`, `REJECTED`
+                > These statuses should also be used if the batch total is zero.
+
+                - If the batch total is negative, which means that the merchant has a debit with the marketplace, then the following statuses should be used:
+                `WAITING_MERCHANT_PAYMENT`, `DEBIT_IN_THE_NEXT_BATCH`
           enum:
-            - "AGENDADO"
-            - "EXECUTADO"   
+            - "SCHEDULED"
+            - "PAID"
+            - "REJECTED"
+            - "WAITING_MERCHANT_PAYMENT"
+            - "DEBIT_IN_THE_NEXT_BATCH"   
         expectedPaymentDate:
           type: string
           format: "date-time"
-          description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+          description: "Expected payment date and time. \n\n(UTC date-time in ISO timestamp format)."
         paymentExecutionDate:
           type: string
           format: "date-time"
-          description: "Date and time of the payment batch creation. \n\n(UTC date-time in ISO timestamp format)."
+          description: "Date and time when the payment was executed. \n\n(UTC date-time in ISO timestamp format)."
           
-    CreditedAccount:
+
+    PaymentBatchDetails:
       type: object
       properties:
-        bankName:
-          type: string
-          description: ""
-        bankNumber:
-          type: string
-          description: ""
-        number:
-          type: string
-          description: ""
-        branchCode:
-          type: string
-          description: ""
-        document:
-          type: object
-          properties:
-            type:
-              type: string
-              description: ""
-            number:
-              type: string
-              description: ""
-            documentHolderName:
-              type: string
-              description: ""   
+        merchants:
+          type: array
+          description: "List of the merchants that are included in the batch. For each merchant there will be a list of orders and extra fees."
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: "Merchant Id."
+              name:
+                type: string
+                description: "Merchant name."  
+              orders:
+                type: array
+                description: "Details of all the orders that make up this batch."
+                items:
+                  allOf:
+                  - $ref: "#/components/schemas/PaymentBatchOrders"
+              extras:
+                type: array
+                description: "Details of all the extra charges that make up this batch."
+                items:
+                  allOf:
+                  - $ref: "#/components/schemas/PaymentBatchExtras"    
 
     PaymentBatchOrders:
       type: object
       properties:
-        merchants:
+        orderInfo:
           type: object
-          description: ""
+          description: "Basic information and identification of the order."
           properties:
             id:
               type: string
-              description: ""
-            name:
+              description: "A unique identifier of the order."
+            displayId:
+              type: "string"
+              description: "Order Id shown in the **Ordering Application** interface for the costumer."
+            createdAt:              
               type: string
-              description: ""  
-            orders:
-              type: array
-              description: ""
-              items:
-                allOf:
-                - $ref: "#/components/schemas/PaymentBatchOrdersDetails"
+              format: "date-time"
+              description: "Date and time of order creation. \n\n(UTC date-time in ISO timestamp format)."
+            status:
+              type: string
+              description: "Order status at the time of batch request."      
+              enum:
+                - "CONCLUDED"
+                - "CANCELLED"                     
+        paymentInfo:
+          type: object
+          description: "Information regarding the payment of the order."
+          properties:
+            itemsTotal:
+              description: "Total price of the items in the order, without considering fees."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            deliveryFee:
+              description: "Delivery Fee charged on the order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            serviceFee:
+              description: "Service Fee charged on the order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            tipValue:
+              description: "Tip given on order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            benefits:
+              type: object
+              description: "Total benefits that applied to this order. Benefits may have been funded by the marketplace or the merchant."
+              properties:
+                marketplace:
+                  description: "Total amount of benefits funded by the marketplace."
+                  allOf:
+                  - $ref: "#/components/schemas/Price"
+                merchant:
+                  description: "Total amount of benefits funded by the merchant."
+                  allOf:
+                  - $ref: "#/components/schemas/Price"
+            orderTotal:
+              description: "Total order value."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            paymentType:
+              type: string
+              description: "Payment type.
 
-    PaymentBatchOrdersDetails:
+                            \n\nIf the payment has been made through the **Ordering Application** itself, and the customer does not need to pay any money upon receipt of the order, then the type to use is `ONLINE`. 
+
+                            \n\nOtherwise use `OFFLINE`."
+              enum:
+                - "ONLINE"
+                - "OFFLINE"
+            receivedBy:
+              type: string
+              description: "By whom payment for the order was received. 
+                          > For cases where payment has been made through the **Ordering Application**, but an external voucher company will be used as the payment method, then enter `VOUCHER`. "
+              enum:
+                - "MERCHANT"
+                - "MARKETPLACE"
+                - "VOUCHER"
+                - "OTHERS"
+            paymentMethod:
+              type: string
+              description: "Method used to pay for the order."
+              enum:
+                - "CREDIT"
+                - "DEBIT"
+                - "MEAL_VOUCHER"
+                - "FOOD_VOUCHER"
+                - "DIGITAL_WALLET"
+                - "PIX"
+                - "CASH"
+                - "CREDIT_DEBIT"
+                - "COUPON"
+                - "REDEEM"
+                - "PREPAID_REDEEM"
+                - "OTHER"
+            methodDetails:
+              type: string
+              description: "Free field. Use this field to provide more details about the payment method used. (Example: Card brand or Wallet name)"
+            voucherNSU:
+              type: string
+              description: "Field to inform the NSU of the transaction made between the **Ordering Application** and the Voucher company. \n\n**Required** if methodDetails is `MEAL_VOUCHER` or `FOOD_VOUCHER`"
+        fees:
+          type: object
+          description: "Details of the fees charged on the order."
+          properties:
+            orderCommissionValue:
+              description: "Value of the commission charged on the order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            orderCommissionPercentual:
+              type: number
+              description: "Percentual of the commission charged on the order."
+            transactionFeeValue:
+              description: "Value of the transaction fee (or acquisition fee) charged on the order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            transactionFeePercentual:
+              type: number
+              description: "Percentual of the transaction fee (or acquisition fee) charged on the order."
+            deliveryComissionValue:
+              description: "Value of the commission charged on the order delivery fee."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            deliveryComissionPercentual:
+              type: number
+              description: "Percentual of the commission charged on the order delivery fee."
+        totalDebit:
+            description: "Total of all the values that will be charged to the merchant. It is the sum of all the negative values of the order. \n\nThis field must be a negative value."
+            allOf:
+            - $ref: "#/components/schemas/Price"                             
+        totalCredit:
+            description: "Total of all values that will be credited to the merchant. It is the sum of all the positive values of the order. \n\nThis field must be a positive value."
+            allOf:
+            - $ref: "#/components/schemas/Price"
+
+    PaymentBatchExtras:
       type: object
       properties:
-        merchants:
+        ordersCancellations:
           type: object
-          description: ""
+          description: "Breakdown of the amounts referring to order cancellations."
           properties:
-            id:
+            orderId:
               type: string
-              description: ""
-            name:
+              description: "A unique identifier of the order."
+            amount:
+              description: "Amount canceled. It does not necessarily have to be the full amount of the order."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            liability:
               type: string
-              description: ""  
-            orders:
-              type: array
-              description: ""
-              items:
-                allOf:
-                - $ref: "#/components/schemas/CreditedAccount"
+              description: "Indicates who is responsible for paying for the cancellation."
+              enum:
+                - "MARKETPLACE"
+                - "MERCHANT"
+            cancellationDate:
+              type: string
+              format: "date-time"
+              description: "Date and time of order cancellation. This date and time is when the cancellation was registered by the Ordering Application. \n\n(UTC date-time in ISO timestamp format)."
+            cancelattionReason:
+              type: string
+              description: "Free field to indicate the reason for the cancellation."                                             
+        ordersChargebacks:
+          type: object
+          description: "Breakdown of the amounts referring to order chargebacks."
+          properties:
+            orderId:
+              type: string
+              description: "A unique identifier of the order."
+            amount:
+              type: string
+              description: "Amount reversed. It does not necessarily have to be the full amount of the order."
+            chargebackDate:
+              type: string
+              format: "date-time"
+              description: "Date and time when the chargeback ocurred. This date and time is when the chargeback was registered by the Ordering Application. \n\n(UTC date-time in ISO timestamp format)."
+            chargebackReason:
+              type: string
+              description: "Free field to indicate the reason for the chargeback." 
+        others:
+          type: object
+          description: "This section should be used to indicate other charges that might be added to the batch total, not necessarily linked to purchase orders."
+          properties:
+            type:
+              type: string
+              description: "The type of charge."
+              enum:
+                - "MONTHLY_FEES"
+                - "MARKETING_FEES"
+                - "LOANS_FEES"
+                - "TAXES" 
+                - "PAYMENT_IN_ADVANCE_FEES"
+                - "PREVIOUS_DEBITS_PAYMENTS"
+                - "OTHER"
+            description:
+              type: string
+              description: "Detailed description of the charge."  
+            amount:
+              description: "Charge amount."
+              allOf:
+              - $ref: "#/components/schemas/Price"
+            referenceId:
+              type: string
+              description: "This field should be used, if necessary, to indicate some reference ID related to the type of charge chosen, in order to facilitate the merchant's identification of the charge. This is a generic field, so any type of identification can be used.  (Example: Indicate which previous batch is being charged)."
+            observations:
+              type: string
+              description: "Free field to indicate any remarks that may apply."
+        totalDebit:
+            description: "Total of all the values that will be charged to the merchant. It is the sum of all the negative values. \n\nThis field must be a negative value."
+            allOf:
+            - $ref: "#/components/schemas/Price"                             
+        totalCredit:
+            description: "Total of all values that will be credited to the merchant. It is the sum of all the positive values. \n\nThis field must be a positive value."
+            allOf:
+            - $ref: "#/components/schemas/Price"
 
 #Sales Report
 
