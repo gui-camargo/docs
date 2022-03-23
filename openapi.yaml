@@ -1618,39 +1618,40 @@ paths:
           <img src="https://abrasel-nacional.github.io/docs/images/directionGETSS_OA.png" />
         </div>
       parameters:
-        - name: "orderDateStart"
+        - name: "startOrderDate"
           required: false
           in: "query"
           schema:
             type: "string"
             format: "date-time"
-            description: " \n\n(UTC date-time in ISO timestamp format)."
-        - name: "orderDateEnd"
+            description: "Initial order date for filtering. \n\n(UTC date-time in ISO timestamp format)."
+        - name: "endOrderDate"
           required: false
           in: "query"
           schema:
             type: "string"
             format: "date-time"
-            description: " \n\n(UTC date-time in ISO timestamp format)."
-        - name: "paymentDateStart"
+            description: "Final order date for filtering. \n\n(UTC date-time in ISO timestamp format)."
+        - name: "StartPaymentDate"
           required: false
           in: "query"
           schema:
             type: "string"
             format: "date-time"
-            description: " \n\n(UTC date-time in ISO timestamp format)."
-        - name: "paymentDateEnd"
+            description: "Initial payment date for filtering. \n\n(UTC date-time in ISO timestamp format)."
+        - name: "endPaymentDate"
           required: false
           in: "query"
           schema:
             type: "string"
             format: "date-time"
-            description: " \n\n(UTC date-time in ISO timestamp format)."
+            description: "Final payment date for filtering \n\n(UTC date-time in ISO timestamp format)."
         - name: "batchStatus"
           required: false
           in: "query"
           schema:
             type: "string"
+            description: "Batch Status."
             enum:
               - "OPEN"
               - "CLOSED"
@@ -1658,7 +1659,8 @@ paths:
           required: false
           in: "query"
           schema:
-            type: "string"  
+            type: "string"
+            description: "Payment Status."
             enum:
               - "SCHEDULED"
               - "PAID"
@@ -5438,29 +5440,32 @@ components:
         properties:
           summary:
             type: object
-            description: ""
+            description: "Summary of the response results."
             properties:
               searchedPeriod:
                 type: object
-                description: ""
+                description: "Filtered period."
                 properties:
                   startDate:
                     type: "string"
                     format: "date-time"
-                    description: " \n\n(UTC date-time in ISO timestamp format)."
+                    description: "Initial date of the period. You must consider the most distant date informed in the requisition filters.  \n\n(UTC date-time in ISO timestamp format)."
                   endDate:
                     type: "string"
                     format: "date-time"
-                    description: " \n\n(UTC date-time in ISO timestamp format)."
+                    description: "Final date of the period. The most current date entered in the requisition filters should be considered. \n\n(UTC date-time in ISO timestamp format)."
               totalRecordsFound:
                 type: integer
+                description: "Total amount of records found considering the filters informed."
               totalRecordsReturned:
                 type: integer
+                description: "Total records that actually returned in the response. Depending on the filtering applied, it is possible that this number is smaller than `totalRecordsFound`. In this case a new request should be made, informing more restrictive filters."
               warningMessage:
                 type: string
+                description: "This message must return, when the `totalRecordsFound` and `totalRecordsReturned` fields are not equal, informing the systems that there are more records found than those returned, and if possible perform a new search with stricter filters. "
           batches:
             type: object
-            description: ""
+            description: "Details of all returned payments batches."
             properties:      
               batchId:
                 type: "string"
