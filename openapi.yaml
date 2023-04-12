@@ -2054,7 +2054,7 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-x-webhooks:
+webhooks:
   # Merchant
 
   /v1/menuUpdated:
