@@ -1,0 +1,716 @@
+{
+	"info": {
+		"_postman_id": "3fced7f6-cecd-4e70-a4d1-44c713d996cf",
+		"name": "Open Delivery Sandbox",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24614288"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "/oauth/token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{client_secret}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.opendelivery.com.br/od/oauth/token",
+							"protocol": "https",
+							"host": [
+								"api",
+								"opendelivery",
+								"com",
+								"br"
+							],
+							"path": [
+								"od",
+								"oauth",
+								"token"
+							],
+							"query": [
+								{
+									"key": "client_id",
+									"value": "3375eec9-f27f-4917-b710-8914816742ce",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sandbox",
+			"item": [
+				{
+					"name": "/sandbox/registration",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"merchant\": {\r\n        \"id\": \"12341556000120-dbc7e35a-c936-4665-9e13-eb55eb8b6801\", \r\n        \"name\": \"Merchant Sandbox Open Delivery\"},\r\n    \"eventReceptionMode\": \"POLLING\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/registration",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"registration"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/registration",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/registration",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"registration"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"{{orderId}}\",\r\n  \"type\": \"DELIVERY\",\r\n  \"displayId\": \"001\",\r\n  \"sourceAppId\": \"de3697bd-42d6-45dd-9c36-3d7a59080ea2\",\r\n  \"createdAt\": \"{{$isoTimestamp}}\",\r\n  \"lastEvent\": \"CREATED\",\r\n  \"orderTiming\": \"INSTANT\",\r\n  \"preparationStartDateTime\": \"{{$isoTimestamp}}\",\r\n  \"merchant\": {\r\n    \"id\": \"{{merchantId}}\",\r\n    \"name\": \"Merchant Sandbox Open Delivery\"\r\n  },\r\n  \"items\": [\r\n    {\r\n      \"id\": \"de3697bd-42d6-45dd-9c36-3d7a59080eb1\",\r\n      \"index\": 0,\r\n      \"name\": \"Item 1\",\r\n      \"externalCode\": \"1001\",\r\n      \"unit\": \"UN\",\r\n      \"ean\": \"string\",\r\n      \"quantity\": 1,\r\n      \"specialInstructions\": \"string\",\r\n      \"unitPrice\": {\r\n        \"value\": 40,\r\n        \"currency\": \"BRL\"\r\n      },\r\n      \"optionsPrice\": {\r\n        \"value\": 40,\r\n        \"currency\": \"BRL\"\r\n      },\r\n      \"totalPrice\": {\r\n        \"value\": 80,\r\n        \"currency\": \"BRL\"\r\n      },\r\n      \"options\": [\r\n        {\r\n          \"index\": 0,\r\n          \"id\": \"de3697bd-42d6-45dd-9c36-3d7a59080ed1\",\r\n          \"name\": \"Optional 1\",\r\n          \"externalCode\": \"9001\",\r\n          \"unit\": \"UN\",\r\n          \"ean\": \"string\",\r\n          \"quantity\": 2,\r\n          \"unitPrice\": {\r\n            \"value\": 20,\r\n            \"currency\": \"BRL\"\r\n          },\r\n          \"totalPrice\": {\r\n            \"value\": 40,\r\n            \"currency\": \"BRL\"\r\n          },\r\n          \"specialInstructions\": \"string\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"otherFees\": [\r\n    {\r\n      \"name\": \"Taxa de Entrega\",\r\n      \"type\": \"DELIVERY_FEE\",\r\n      \"receivedBy\": \"MARKETPLACE\",\r\n      \"receiverDocument\": \"N/D\",\r\n      \"price\": {\r\n        \"value\": 5,\r\n        \"currency\": \"BRL\"\r\n      },\r\n      \"observation\": \"string\"\r\n    }\r\n  ],\r\n  \"discounts\": [\r\n    {\r\n      \"amount\": {\r\n        \"value\": 10,\r\n        \"currency\": \"BRL\"\r\n      },\r\n      \"target\": \"CART\",\r\n      \"targetId\": \"string\",\r\n      \"sponsorshipValues\": [\r\n        {\r\n          \"name\": \"MARKETPLACE\",\r\n          \"amount\": {\r\n            \"value\": 10,\r\n            \"currency\": \"BRL\"\r\n          }\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"total\": {\r\n    \"itemsPrice\": {\r\n      \"value\": 80,\r\n      \"currency\": \"BRL\"\r\n    },\r\n    \"otherFees\": {\r\n      \"value\": 5,\r\n      \"currency\": \"BRL\"\r\n    },\r\n    \"discount\": {\r\n      \"value\": 10,\r\n      \"currency\": \"BRL\"\r\n    },\r\n    \"orderAmount\": {\r\n      \"value\": 75,\r\n      \"currency\": \"BRL\"\r\n    }\r\n  },\r\n  \"payments\": {\r\n    \"prepaid\": 75,\r\n    \"pending\": 0,\r\n    \"methods\": [\r\n      {\r\n        \"value\": 75,\r\n        \"currency\": \"BRL\",\r\n        \"type\": \"PREPAID\",\r\n        \"method\": \"CREDIT\",\r\n        \"brand\": \"VISA\",\r\n        \"methodInfo\": \"string\",\r\n        \"changeFor\": 0\r\n      }\r\n    ]\r\n  },\r\n  \"customer\": {\r\n    \"id\": \"de3697bd-42d6-45dd-9c36-3d7a59080ee1\",\r\n    \"phone\": {\r\n      \"number\": \"Not Informed\",\r\n      \"extension\": \"-\"\r\n    },\r\n    \"documentNumber\": \"99999999999\",\r\n    \"name\": \"John Smith\",\r\n    \"email\": \"email@dominio.com\",\r\n    \"ordersCountOnMerchant\": 1\r\n  },\r\n  \"schedule\": {\r\n    \"scheduledDateTimeStart\": \"2019-08-24T14:15:22Z\",\r\n    \"scheduledDateTimeEnd\": \"2019-08-24T14:15:22Z\"\r\n  },\r\n  \"delivery\": {\r\n    \"deliveredBy\": \"MERCHANT\",\r\n    \"deliveryAddress\": {\r\n      \"country\": \"BR\",\r\n      \"state\": \"BR-SP\",\r\n      \"city\": \"São Paulo\",\r\n      \"district\": \"Moema\",\r\n      \"street\": \"Plaza Avenue\",\r\n      \"number\": \"100\",\r\n      \"complement\": \"BL 02 AP 31\",\r\n      \"reference\": \"Yellow House\",\r\n      \"formattedAddress\": \"Plaza Avenue, 100, BL 02 AP 31, Moema - São Paulo, SP - Brazil\",\r\n      \"postalCode\": \"20111-000\",\r\n      \"coordinates\": {\r\n        \"latitude\": -23.54823,\r\n        \"longitude\": -46.63632\r\n      }\r\n    },\r\n    \"estimatedDeliveryDateTime\": \"2019-08-24T14:15:22Z\",\r\n    \"deliveryDateTime\": \"2019-08-24T14:15:22Z\"\r\n  },\r\n  \"takeout\": {\r\n    \"mode\": \"DEFAULT\",\r\n    \"takeoutDateTime\": \"2019-08-24T14:15:22Z\"\r\n  },\r\n  \"indoor\": {\r\n    \"mode\": \"DEFAULT\",\r\n    \"indoorDateTime\": \"2019-08-24T14:15:22Z\",\r\n    \"place\": \"25\",\r\n    \"tab\": \"12\"\r\n  },\r\n  \"sendDelivered\": true,\r\n  \"sendTracking\": false,\r\n  \"extraInfo\": \"string\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders/conclude",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "ab722eff-bbf5-4d56-9a84-332a46ab02ca",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders/{{orderId}}/conclude",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders",
+								"{{orderId}}",
+								"conclude"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders/sendCancellationRequest",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"reason\": \"Cancelamento solicitado por sistema fora do ar\",\r\n  \"code\": \"CONSUMER_CANCELLATION_REQUESTED\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders/{{orderId}}/sendCancellationRequest",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders",
+								"{{orderId}}",
+								"sendCancellationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders/acceptMerchantCancellation Copy",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders/{{orderId}}/acceptMerchantCancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders",
+								"{{orderId}}",
+								"acceptMerchantCancellation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders/denyMerchantCancellation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "ab722eff-bbf5-4d56-9a84-332a46ab02ca",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders/{{orderId}}/denyMerchantCancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders",
+								"{{orderId}}",
+								"denyMerchantCancellation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/sandbox/orders/cancel",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "ab722eff-bbf5-4d56-9a84-332a46ab02ca",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sandbox/orders/{{orderId}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sandbox",
+								"orders",
+								"{{orderId}}",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Events",
+			"item": [
+				{
+					"name": "/events:polling",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "issuer",
+								"value": "{{client_id}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/events:polling",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"events:polling"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/events/acknowledgment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\r\n\r\n    \"id\": \"a13abe39-216d-4d71-92f2-f269b8c4f030\",\r\n    \"orderId\": \"{{orderId}}\",\r\n    \"eventType\": \"CREATED\"\r\n\r\n}]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/events/acknowledgment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"events",
+								"acknowledgment"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "/orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/confirm",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"reason\" : \"Atendido por Peter Smith\",\r\n    \"orderExternalCode\": \"0001\",\r\n    \"createdAt\": \"{{$isoTimestamp}}\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/confirm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/readyForPickup",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/readyForPickup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"readyForPickup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/dispatch",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"reason\" : \"Atendido por Guilherme\",\r\n    \"orderExternalCode\": \"de3697bd-42d6-45dd-9c36-3d7a59080023\",\r\n    \"createdAt\": \"2019-08-24T14:15:22Z\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/dispatch",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"dispatch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/delivered",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"reason\" : \"Atendido por Guilherme\",\r\n    \"orderExternalCode\": \"de3697bd-42d6-45dd-9c36-3d7a59080023\",\r\n    \"createdAt\": \"2019-08-24T14:15:22Z\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/delivered",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"delivered"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/requestCancellation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"reason\": \"Cancelamento solicitado por sistema fora do ar\",\r\n  \"code\": \"SYSTEMIC_ISSUES\",\r\n  \"mode\": \"MANUAL\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/requestCancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"requestCancellation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/acceptCancellation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"reason\" : \"Atendido por Guilherme\",\r\n    \"orderExternalCode\": \"de3697bd-42d6-45dd-9c36-3d7a59080023\",\r\n    \"createdAt\": \"2019-08-24T14:15:22Z\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/acceptCancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"acceptCancellation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/orders/denyCancellation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"reason\": \"Cancelamento feito por John\",\r\n  \"code\": \"DISH_ALREADY_DONE\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}/denyCancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}",
+								"denyCancellation"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
